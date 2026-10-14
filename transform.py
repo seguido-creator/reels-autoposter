@@ -105,6 +105,34 @@ def with_retry(fn, tries=6, base=10):
             time.sleep(wait)
 
 
+def script_models():
+    """Main model first, then backups (used when the main one is overloaded or retired)."""
+    cfg = load_config()
+    first = os.environ.get("GEMINI_MODEL", "").strip() or cfg["gemini_model_default"]
+    out = [first]
+    for m in cfg.get("gemini_fallback_models", []):
+        if m not in out:
+            out.append(m)
+    return out
+
+
+def generate(client, contents, config=None):
+    """generate_content with retries, then fallback to the next model. Returns (resp, model)."""
+    last = None
+    for model in script_models():
+        try:
+            resp = with_retry(lambda: client.models.generate_content(
+                model=model, contents=contents, config=config), tries=3)
+            return resp, model
+        except Exception as exc:
+            msg = str(exc)
+            if not any(t in msg for t in TRANSIENT + ("404", "NOT_FOUND", "not found")):
+                raise
+            log(f"Model {model} unavailable ({msg[:60]}), trying the next one")
+            last = exc
+    raise last
+
+
 def write_script(video_path, page, duration):
     from google.genai import types
     client = _gemini_client()
@@ -124,10 +152,11 @@ def write_script(video_path, page, duration):
         prompt = SCRIPT_PROMPT.format(angle=page.get("content_angle", "general entertainment"),
                                       audience=page["audience"], language=page["language"],
                                       duration=duration)
-        resp = with_retry(lambda: client.models.generate_content(
-            model=model, contents=[uploaded, prompt],
-            config=types.GenerateContentConfig(response_mime_type="application/json",
-                                               temperature=0.8)))
+        resp, used = generate(client, [uploaded, prompt],
+                              types.GenerateContentConfig(response_mime_type="application/json",
+                                                          temperature=0.8))
+        if used != model:
+            log(f"Script written with backup model {used}")
     finally:
         try:
             client.files.delete(name=uploaded.name)

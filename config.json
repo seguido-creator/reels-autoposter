@@ -2,6 +2,10 @@
   "graph_api_version": "v25.0",
   "gemini_model_default": "gemini-3.8-flash",
   "tts_model_default": "gemini-3.8-flash-tts",
+  "gemini_fallback_models": [
+    "gemini-flash-latest",
+    "gemini-2.5-flash"
+  ],
   "max_reel_seconds": 89,
   "min_source_seconds": 3,
   "slot_window_hours": 2,

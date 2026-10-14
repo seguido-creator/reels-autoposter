@@ -189,11 +189,16 @@ def check():
         try:
             from google import genai
             client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-            model = os.environ.get("GEMINI_MODEL", "").strip() or cfg["gemini_model_default"]
             import transform
-            r = transform.with_retry(lambda: client.models.generate_content(
-                model=model, contents="Reply with the word OK"))
-            result("Gemini", True, f"model {model}: {r.text.strip()[:20]}")
+            for m in transform.script_models():
+                try:
+                    r = transform.with_retry(lambda: client.models.generate_content(
+                        model=m, contents="Reply with the word OK"), tries=2)
+                    print(f"INFO  Gemini model {m}: available")
+                except Exception as e:
+                    print(f"INFO  Gemini model {m}: {str(e)[:90]}")
+            r, used = transform.generate(client, "Reply with the word OK")
+            result("Gemini", True, f"model {used}: {r.text.strip()[:20]}")
         except Exception as e:
             result("Gemini", False, str(e)[:300])
         try:
