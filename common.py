@@ -118,9 +118,9 @@ def render_folder_id(drive):
     return drive.files().create(body=meta, fields="id").execute()["id"]
 
 
-def upload_render(drive, path, name, folder_id):
+def upload_render(drive, path, name, folder_id, mime="video/mp4"):
     from googleapiclient.http import MediaFileUpload
-    media = MediaFileUpload(str(path), mimetype="video/mp4", resumable=True,
+    media = MediaFileUpload(str(path), mimetype=mime, resumable=True,
                             chunksize=16 * 1024 * 1024)
     f = drive.files().create(body={"name": name, "parents": [folder_id]}, media_body=media,
                              fields="id, webViewLink").execute()

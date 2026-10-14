@@ -34,7 +34,34 @@
       "source_folders": [
         "CAR REELS"
       ],
-      "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type."
+      "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type.",
+      "image": {
+        "slots": [
+          "09:00",
+          "15:00"
+        ],
+        "footer": "Cars, explained. Follow for daily car facts.",
+        "types": [
+          "fact",
+          "tips",
+          "myth",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#1E1E22",
+          "bg_bottom": "#0E0E10",
+          "accent": "#FF5C00",
+          "text": "#FFFFFF",
+          "muted": "#C9C9CF",
+          "on_accent": "#FFFFFF",
+          "motif": "stripes",
+          "title_font": "Anton.ttf",
+          "body_font": "Poppins-Medium.ttf",
+          "tag_font": "BebasNeue.ttf",
+          "upper_headline": true,
+          "line_height": 1.1
+        }
+      }
     },
     {
       "key": "UAE",
@@ -58,7 +85,33 @@
         "LUXURY RICH LIFESTYLE",
         "TRAVEL VIDEOS"
       ],
-      "content_angle": "LUXURY STAYS & TRAVEL. Explain the design, architecture, hospitality tricks, travel hacks or the 'how does this work' behind what we see (infinity pools, overwater villas, yacht stabilisers, booking tips). Never invent a hotel name, location, or price; mention a place only if it is unmistakable (e.g. Burj Al Arab), otherwise say 'this resort'."
+      "content_angle": "LUXURY STAYS & TRAVEL. Explain the design, architecture, hospitality tricks, travel hacks or the 'how does this work' behind what we see (infinity pools, overwater villas, yacht stabilisers, booking tips). Never invent a hotel name, location, or price; mention a place only if it is unmistakable (e.g. Burj Al Arab), otherwise say 'this resort'.",
+      "image": {
+        "slots": [
+          "10:00",
+          "16:00"
+        ],
+        "footer": "Luxury stays & travel smarts, decoded.",
+        "types": [
+          "fact",
+          "tips",
+          "myth",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#18203A",
+          "bg_bottom": "#0A101C",
+          "accent": "#D4AF5F",
+          "text": "#FFFFFF",
+          "muted": "#C8CDD8",
+          "on_accent": "#10172A",
+          "motif": "circles",
+          "title_font": "Playfair-Bold.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "line_height": 1.18
+        }
+      }
     },
     {
       "key": "PH",
@@ -80,7 +133,182 @@
         "DOGS REELS",
         "FUNNY ANIMAL CAT"
       ],
-      "content_angle": "DOGS AND CATS. Explain the animal behavior we see (why dogs tilt their heads, why cats knock things over), plus a practical, safe pet-care tip for Filipino pet owners. Use only well-established veterinary/behavior facts; never give medical dosing advice; if a pet looks hurt or stressed, say to see a vet."
+      "content_angle": "DOGS AND CATS. Explain the animal behavior we see (why dogs tilt their heads, why cats knock things over), plus a practical, safe pet-care tip for Filipino pet owners. Use only well-established veterinary/behavior facts; never give medical dosing advice; if a pet looks hurt or stressed, say to see a vet.",
+      "image": {
+        "slots": [
+          "09:00",
+          "15:00"
+        ],
+        "footer": "Bakit ganyan ang alaga mo? Alamin natin!",
+        "types": [
+          "fact",
+          "tips",
+          "myth",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#FFC425",
+          "bg_bottom": "#FFB000",
+          "accent": "#008080",
+          "text": "#54341F",
+          "muted": "#54341F",
+          "on_accent": "#FFFFFF",
+          "panel": "#FFF8E8",
+          "motif": "dots",
+          "title_font": "Baloo-ExtraBold.ttf",
+          "body_font": "Baloo-SemiBold.ttf",
+          "tag_font": "Baloo-ExtraBold.ttf",
+          "line_height": 1.05
+        }
+      }
+    }
+  ],
+  "image_pages": [
+    {
+      "key": "PAWS",
+      "page_id_env": "FB_PAGE_ID_PAWS",
+      "token_env": "FB_TOKEN_PAWS",
+      "timezone": "America/New_York",
+      "brand": "Pawside Giggles",
+      "audience": "Pet lovers in the US, UK, Canada and Australia, all ages, who enjoy funny and heartwarming dog and cat content.",
+      "language": "Warm, playful, simple American English.",
+      "image": {
+        "slots": [
+          "10:00",
+          "16:00"
+        ],
+        "footer": "Funny pets, real pet facts.",
+        "angle": "DOGS AND CATS: surprising but true pet behavior facts, funny-but-true 'pet logic', practical and safe care tips. Only well-established veterinary/behavior facts; if health is involved, say to ask a vet.",
+        "types": [
+          "fact",
+          "tips",
+          "myth",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#FFF4E6",
+          "bg_bottom": "#FFE1C2",
+          "accent": "#FF6B6B",
+          "text": "#2D2A32",
+          "muted": "#4A4550",
+          "on_accent": "#FFFFFF",
+          "motif": "dots",
+          "title_font": "Baloo-ExtraBold.ttf",
+          "body_font": "Poppins-Medium.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "line_height": 1.05
+        }
+      }
+    },
+    {
+      "key": "DEM",
+      "page_id_env": "FB_PAGE_ID_DEM",
+      "token_env": "FB_TOKEN_DEM",
+      "timezone": "America/New_York",
+      "brand": "Navigating Dementia Together",
+      "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
+      "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
+      "image": {
+        "slots": [
+          "08:30",
+          "19:30"
+        ],
+        "footer": "Practical help & encouragement for caregivers.",
+        "angle": "DEMENTIA CAREGIVING: practical, widely recommended caregiving strategies (communication, routines, home safety, sundowning, mealtimes, caregiver self-care), gentle encouragement for caregivers, and common myths vs facts. Follow mainstream guidance from organisations like the Alzheimer's Association, Alzheimer's Society and NHS. Never suggest medications, supplements, cures or diagnoses; for symptoms or changes, say to talk to their doctor.",
+        "types": [
+          "tips",
+          "quote",
+          "myth",
+          "fact"
+        ],
+        "theme": {
+          "bg_top": "#EEF4F3",
+          "bg_bottom": "#DCEAE8",
+          "accent": "#5B8C85",
+          "text": "#24343A",
+          "muted": "#3E5359",
+          "on_accent": "#FFFFFF",
+          "motif": "circles",
+          "title_font": "Playfair-Bold.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "line_height": 1.18
+        }
+      }
+    },
+    {
+      "key": "FIN",
+      "page_id_env": "FB_PAGE_ID_FIN",
+      "token_env": "FB_TOKEN_FIN",
+      "timezone": "Asia/Manila",
+      "brand": "FILINVEST Global",
+      "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
+      "language": "Simple English with a light, natural Taglish touch. Friendly 'kabayan' tone.",
+      "image": {
+        "slots": [
+          "08:00",
+          "20:00"
+        ],
+        "footer": "Money smarts for Filipinos & OFWs.",
+        "angle": "PERSONAL FINANCE FOR FILIPINOS & OFWs: budgeting, emergency funds, saving habits, avoiding debt traps and scams, how common investments work in general (e.g. what an index fund, Pag-IBIG MP2 or a time deposit is). General education only: never recommend a specific stock, coin, company or product, never promise returns, never quote current rates or prices.",
+        "types": [
+          "tips",
+          "myth",
+          "fact",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#0F2742",
+          "bg_bottom": "#081626",
+          "accent": "#E8B84A",
+          "text": "#FFFFFF",
+          "muted": "#C9D3E0",
+          "on_accent": "#0F2742",
+          "motif": "stripes",
+          "title_font": "Oswald-Medium.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.12
+        }
+      }
+    },
+    {
+      "key": "HOME",
+      "page_id_env": "FB_PAGE_ID_HOME",
+      "token_env": "FB_TOKEN_HOME",
+      "timezone": "Asia/Dubai",
+      "brand": "Home Hacks Decoded",
+      "audience": "Renters and homeowners in the UAE and worldwide (lots of expats in apartments) who like simple cleaning, organising, small-space and moving hacks.",
+      "language": "Simple, clear international English.",
+      "image": {
+        "slots": [
+          "09:00",
+          "17:00"
+        ],
+        "footer": "Cleaning, organising & moving hacks.",
+        "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home cool and fresh in hot climates. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
+        "types": [
+          "tips",
+          "myth",
+          "fact",
+          "question"
+        ],
+        "theme": {
+          "bg_top": "#F6F8F4",
+          "bg_bottom": "#E4ECDF",
+          "accent": "#2E7D5B",
+          "text": "#1F2A24",
+          "muted": "#3B4A41",
+          "on_accent": "#FFFFFF",
+          "motif": "circles",
+          "title_font": "Anton.ttf",
+          "body_font": "Poppins-Medium.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.1
+        }
+      }
     }
   ]
 }
