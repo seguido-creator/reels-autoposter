@@ -1,0 +1,73 @@
+name: Image posts
+
+on:
+  schedule:
+    - cron: "35 * * * *"   # every hour at :35 UTC; the script decides which page is due
+  workflow_dispatch:
+    inputs:
+      page:
+        description: "Page key for a manual run (US, UAE, PH, PAWS, DEM, FIN, HOME). Blank = normal schedule."
+        required: false
+        default: ""
+      mode:
+        description: "post = publish now, preview = only save the card to your Drive"
+        type: choice
+        options: [preview, post]
+        default: preview
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
+      FB_TOKEN_US: ${{ secrets.FB_TOKEN_US }}
+      FB_PAGE_ID_UAE: ${{ secrets.FB_PAGE_ID_UAE }}
+      FB_TOKEN_UAE: ${{ secrets.FB_TOKEN_UAE }}
+      FB_PAGE_ID_PH: ${{ secrets.FB_PAGE_ID_PH }}
+      FB_TOKEN_PH: ${{ secrets.FB_TOKEN_PH }}
+      FB_PAGE_ID_PAWS: ${{ secrets.FB_PAGE_ID_PAWS }}
+      FB_TOKEN_PAWS: ${{ secrets.FB_TOKEN_PAWS }}
+      FB_PAGE_ID_DEM: ${{ secrets.FB_PAGE_ID_DEM }}
+      FB_TOKEN_DEM: ${{ secrets.FB_TOKEN_DEM }}
+      FB_PAGE_ID_FIN: ${{ secrets.FB_PAGE_ID_FIN }}
+      FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
+      FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
+      FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
+      PAGE: ${{ inputs.page || '' }}
+      MODE: ${{ inputs.mode || 'post' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Is an image slot open?
+        id: check
+        if: ${{ env.PAGE == '' }}
+        run: python images.py --precheck
+
+      - name: Install tools
+        if: ${{ steps.check.outputs.due == 'true' || env.PAGE != '' }}
+        run: |
+          pip install -q -r requirements.txt pillow fonttools brotli
+          python fetch_fonts.py
+
+      - name: Make image posts
+        if: ${{ steps.check.outputs.due == 'true' || env.PAGE != '' }}
+        run: |
+          if [ -z "$PAGE" ]; then python images.py
+          elif [ "$MODE" = "preview" ]; then python images.py --preview "$PAGE"
+          else python images.py --force "$PAGE"; fi
