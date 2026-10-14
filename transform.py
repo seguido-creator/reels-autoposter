@@ -138,7 +138,12 @@ def write_script(video_path, page, duration):
     client = _gemini_client()
     model = os.environ.get("GEMINI_MODEL", "").strip() or load_config()["gemini_model_default"]
 
-    uploaded = client.files.upload(file=str(video_path))
+    import mimetypes
+    mime = mimetypes.guess_type(str(video_path))[0] or "video/mp4"
+    if not mime.startswith("video/"):
+        mime = "video/mp4"
+    uploaded = client.files.upload(file=str(video_path),
+                                   config=types.UploadFileConfig(mime_type=mime))
     try:
         for _ in range(100):
             state = getattr(uploaded.state, "name", str(uploaded.state))

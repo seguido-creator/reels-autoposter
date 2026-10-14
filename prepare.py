@@ -18,6 +18,14 @@ from common import (delete_render, download, drive_service, google_creds, load_c
 import transform
 
 MAX_ATTEMPTS_EXTRA = 4  # broken/unsuitable clips we tolerate per run before giving up
+VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi", ".3gp", ".mpeg", ".mpg"}
+RETRYABLE = ("mime type", "mimetype", "503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED",
+             "high demand", "overloaded")
+
+
+def is_retryable(note):
+    """FAILED rows caused by temporary/tooling errors get another chance."""
+    return any(t.lower() in (note or "").lower() for t in RETRYABLE)
 
 
 def housekeeping(ws, rows, drive, cfg):
@@ -53,7 +61,8 @@ def prepare_page(page, cfg, drive, sheet, folder_id):
         return
 
     queue = [(r, row) for r, row in rows
-             if not row["status"] and row["file_id"] and row["approve"].upper() != "SKIP"]
+             if row["file_id"] and row["approve"].upper() != "SKIP"
+             and (not row["status"] or (row["status"] == "FAILED" and is_retryable(row["note"])))]
     made, attempts = 0, 0
     for r, row in queue:
         if made >= need or attempts >= need + MAX_ATTEMPTS_EXTRA:
@@ -62,7 +71,8 @@ def prepare_page(page, cfg, drive, sheet, folder_id):
         work = Path(tempfile.mkdtemp(prefix="prep_"))
         try:
             log(f"[{page['key']}] row {r}: {row['file_name']}")
-            src = work / "src"
+            ext = Path(row["file_name"]).suffix.lower()
+            src = work / ("src" + (ext if ext in VIDEO_EXT else ".mp4"))
             download(drive, row["file_id"], src)
             duration, _ = transform.probe(src)
             if duration < cfg["min_source_seconds"]:
