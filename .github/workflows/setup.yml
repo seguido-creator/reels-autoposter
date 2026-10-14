@@ -1,0 +1,43 @@
+name: Setup tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to run"
+        required: true
+        default: check
+        type: choice
+        options:
+          - check      # test all connections (safe)
+          - build      # first-time: index Drive videos into the Sheet
+          - add-new    # append new videos only (safe, keeps history)
+          - rebuild    # WIPE queue and re-index (loses post history)
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      LIBRARY_FOLDER_ID: ${{ secrets.LIBRARY_FOLDER_ID }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      TTS_MODEL: ${{ vars.TTS_MODEL }}
+      FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
+      FB_TOKEN_US: ${{ secrets.FB_TOKEN_US }}
+      FB_PAGE_ID_UAE: ${{ secrets.FB_PAGE_ID_UAE }}
+      FB_TOKEN_UAE: ${{ secrets.FB_TOKEN_UAE }}
+      FB_PAGE_ID_PH: ${{ secrets.FB_PAGE_ID_PH }}
+      FB_TOKEN_PH: ${{ secrets.FB_TOKEN_PH }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -q -r requirements.txt
+      - run: python setup_tools.py ${{ github.event.inputs.task }}

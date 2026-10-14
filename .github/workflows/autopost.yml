@@ -1,0 +1,56 @@
+name: Autopost Reels
+
+on:
+  schedule:
+    - cron: "5 * * * *"   # every hour at :05 UTC; the script decides which page is due
+  workflow_dispatch:
+    inputs:
+      force_page:
+        description: "Post ONE video right now to this page (US, UAE or PH). Leave blank for the normal schedule."
+        required: false
+        default: ""
+
+concurrency:
+  group: autopost
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      LIBRARY_FOLDER_ID: ${{ secrets.LIBRARY_FOLDER_ID }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
+      FB_TOKEN_US: ${{ secrets.FB_TOKEN_US }}
+      FB_PAGE_ID_UAE: ${{ secrets.FB_PAGE_ID_UAE }}
+      FB_TOKEN_UAE: ${{ secrets.FB_TOKEN_UAE }}
+      FB_PAGE_ID_PH: ${{ secrets.FB_PAGE_ID_PH }}
+      FB_TOKEN_PH: ${{ secrets.FB_TOKEN_PH }}
+      FORCE_PAGE: ${{ inputs.force_page || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Is any posting window open?
+        id: check
+        if: ${{ env.FORCE_PAGE == '' }}
+        run: python autopost.py --precheck
+
+      - name: Install tools
+        if: ${{ steps.check.outputs.due == 'true' || env.FORCE_PAGE != '' }}
+        run: |
+          pip install -q -r requirements.txt
+
+      - name: Post reels
+        if: ${{ steps.check.outputs.due == 'true' || env.FORCE_PAGE != '' }}
+        run: python autopost.py --force "$FORCE_PAGE"
