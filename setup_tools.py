@@ -190,7 +190,9 @@ def check():
             from google import genai
             client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
             model = os.environ.get("GEMINI_MODEL", "").strip() or cfg["gemini_model_default"]
-            r = client.models.generate_content(model=model, contents="Reply with the word OK")
+            import transform
+            r = transform.with_retry(lambda: client.models.generate_content(
+                model=model, contents="Reply with the word OK"))
             result("Gemini", True, f"model {model}: {r.text.strip()[:20]}")
         except Exception as e:
             result("Gemini", False, str(e)[:300])

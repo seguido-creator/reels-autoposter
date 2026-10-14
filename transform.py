@@ -87,6 +87,24 @@ def _gemini_client():
     return genai.Client(api_key=key)
 
 
+TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL",
+             "overloaded", "high demand", "timed out", "Timeout")
+
+
+def with_retry(fn, tries=6, base=10):
+    """Retry temporary Gemini errors (busy/overloaded/rate limit) with backoff: 10,20,40,80,120s."""
+    for attempt in range(tries):
+        try:
+            return fn()
+        except Exception as exc:
+            msg = str(exc)
+            if attempt == tries - 1 or not any(t in msg for t in TRANSIENT):
+                raise
+            wait = min(base * 2 ** attempt, 120)
+            log(f"Gemini busy ({msg[:80]}), retrying in {wait}s")
+            time.sleep(wait)
+
+
 def write_script(video_path, page, duration):
     from google.genai import types
     client = _gemini_client()
@@ -106,10 +124,10 @@ def write_script(video_path, page, duration):
         prompt = SCRIPT_PROMPT.format(angle=page.get("content_angle", "general entertainment"),
                                       audience=page["audience"], language=page["language"],
                                       duration=duration)
-        resp = client.models.generate_content(
+        resp = with_retry(lambda: client.models.generate_content(
             model=model, contents=[uploaded, prompt],
             config=types.GenerateContentConfig(response_mime_type="application/json",
-                                               temperature=0.8))
+                                               temperature=0.8)))
     finally:
         try:
             client.files.delete(name=uploaded.name)
