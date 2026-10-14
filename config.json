@@ -1,0 +1,82 @@
+{
+  "graph_api_version": "v25.0",
+  "gemini_model_default": "gemini-3.8-flash",
+  "tts_model_default": "gemini-3.8-flash-tts",
+  "max_reel_seconds": 89,
+  "min_source_seconds": 3,
+  "slot_window_hours": 2,
+  "max_posts_per_24h_per_page": 25,
+  "ready_buffer_per_page": 4,
+  "review_hours": 6,
+  "min_value_score": 3,
+  "expire_needs_ok_days": 3,
+  "pages": [
+    {
+      "key": "US",
+      "sheet_tab": "US",
+      "page_id_env": "FB_PAGE_ID_US",
+      "token_env": "FB_TOKEN_US",
+      "timezone": "America/New_York",
+      "slots": [
+        "12:00",
+        "18:00",
+        "21:00"
+      ],
+      "brand": "Throttle Decoded",
+      "voice": "Charon",
+      "voice_style": "confident, energetic car-guy storyteller, clear and punchy",
+      "audience": "Viewers in the United States, mostly 18-45, scrolling Facebook Reels for quick entertainment.",
+      "language": "Casual American English. Short, punchy, conversational.",
+      "source_folders": [
+        "CAR REELS"
+      ],
+      "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type."
+    },
+    {
+      "key": "UAE",
+      "sheet_tab": "UAE",
+      "page_id_env": "FB_PAGE_ID_UAE",
+      "token_env": "FB_TOKEN_UAE",
+      "timezone": "Asia/Dubai",
+      "slots": [
+        "13:00",
+        "19:00",
+        "22:00"
+      ],
+      "brand": "Stay Decoded",
+      "voice": "Kore",
+      "voice_style": "warm, clear and confident, easy to understand",
+      "audience": "Residents of the UAE, a very diverse expat-heavy audience (South Asian, Filipino, Arab, Western). Keep it respectful of local culture: no alcohol, no religious jokes, nothing political or suggestive.",
+      "language": "Simple, clear international English that non-native speakers understand instantly.",
+      "source_folders": [
+        "LUXURY HOTELS",
+        "YATCH",
+        "LUXURY RICH LIFESTYLE",
+        "TRAVEL VIDEOS"
+      ],
+      "content_angle": "LUXURY STAYS & TRAVEL. Explain the design, architecture, hospitality tricks, travel hacks or the 'how does this work' behind what we see (infinity pools, overwater villas, yacht stabilisers, booking tips). Never invent a hotel name, location, or price; mention a place only if it is unmistakable (e.g. Burj Al Arab), otherwise say 'this resort'."
+    },
+    {
+      "key": "PH",
+      "sheet_tab": "PH",
+      "page_id_env": "FB_PAGE_ID_PH",
+      "token_env": "FB_TOKEN_PH",
+      "timezone": "Asia/Manila",
+      "slots": [
+        "12:00",
+        "19:00",
+        "21:00"
+      ],
+      "brand": "Alaga Explained",
+      "voice": "Aoede",
+      "voice_style": "masaya, friendly and natural, like a Filipino vlogger talking to barkada",
+      "audience": "Filipino viewers in the Philippines, all ages, who love relatable, funny and heartwarming content.",
+      "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk and post on Facebook. Light, friendly, relatable.",
+      "source_folders": [
+        "DOGS REELS",
+        "FUNNY ANIMAL CAT"
+      ],
+      "content_angle": "DOGS AND CATS. Explain the animal behavior we see (why dogs tilt their heads, why cats knock things over), plus a practical, safe pet-care tip for Filipino pet owners. Use only well-established veterinary/behavior facts; never give medical dosing advice; if a pet looks hurt or stressed, say to see a vet."
+    }
+  ]
+}
