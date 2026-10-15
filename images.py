@@ -127,8 +127,10 @@ def stock_photo(page, card, used_ids):
     from PIL import Image
     key = os.environ.get("PEXELS_API_KEY", "").strip()
     query = str(card.get("photo_search") or "").strip()
-    if not key or not query:
+    if not query:
         return None, None, None
+    if not key:
+        return pixabay_photo(page, query, used_ids)
     for q in (query, " ".join(query.split()[:2])):
         try:
             r = requests.get("https://api.pexels.com/v1/search", headers={"Authorization": key},
@@ -144,6 +146,34 @@ def stock_photo(page, card, used_ids):
             raw = requests.get(p["src"].get("large2x") or p["src"]["original"], timeout=60).content
             credit = f"Photo: {p.get('photographer', 'Pexels')} / Pexels"
             return Image.open(io.BytesIO(raw)).convert("RGB"), credit, str(p["id"])
+    return pixabay_photo(page, query, used_ids)
+
+
+def pixabay_photo(page, query, used_ids):
+    """Free real photo from Pixabay (needs PIXABAY_API_KEY). Pixabay asks API users to download
+    and re-host images (no hotlinking), which is what posting to Facebook does."""
+    import io
+    import random
+    import requests
+    from PIL import Image
+    key = os.environ.get("PIXABAY_API_KEY", "").strip()
+    if not key:
+        return None, None, None
+    for q in (query, " ".join(query.split()[:2])):
+        try:
+            r = requests.get("https://pixabay.com/api/", timeout=30, params={
+                "key": key, "q": q[:100], "image_type": "photo", "orientation": "vertical",
+                "safesearch": "true", "per_page": 50, "min_width": 900})
+            r.raise_for_status()
+            hits = [h for h in r.json().get("hits", []) if f"px{h['id']}" not in used_ids]
+        except Exception as exc:
+            log(f"[{page['key']}] Pixabay search failed: {str(exc)[:120]}")
+            return None, None, None
+        if hits:
+            h = random.choice(hits[:15])
+            raw = requests.get(h["largeImageURL"], timeout=60).content
+            credit = f"Image: {h.get('user', 'Pixabay')} / Pixabay"
+            return Image.open(io.BytesIO(raw)).convert("RGB"), credit, f"px{h['id']}"
     return None, None, None
 
 
@@ -432,7 +462,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     card = write_card(page, recent)
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
-    used = {m for r in mine for m in re.findall(r"pexels:(\d+)", r.get("note", ""))}
+    used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
     photo, credit, pid = stock_photo(page, card, used)
     if photo is not None:
         card["photo"], card["credit"] = f"pexels:{pid}", credit
