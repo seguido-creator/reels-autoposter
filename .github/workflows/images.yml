@@ -2,7 +2,7 @@ name: Image posts
 
 on:
   schedule:
-    - cron: "35 * * * *"   # every hour at :35 UTC; the script decides which page is due
+    - cron: "22,52 * * * *"   # twice an hour (GitHub often skips runs); the script decides which page is due
   workflow_dispatch:
     inputs:
       page:

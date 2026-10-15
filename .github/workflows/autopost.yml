@@ -2,7 +2,7 @@ name: Autopost Reels
 
 on:
   schedule:
-    - cron: "5 * * * *"   # every hour at :05 UTC; the script decides which page is due
+    - cron: "7,37 * * * *"   # twice an hour (GitHub often skips runs); the script decides which page is due
   workflow_dispatch:
     inputs:
       force_page:
