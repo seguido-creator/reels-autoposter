@@ -205,8 +205,14 @@
           "body_font": "Poppins-Medium.ttf",
           "tag_font": "Poppins-Bold.ttf",
           "line_height": 1.05
-        }
-      }
+        },
+        "reel_days": [
+          1,
+          4
+        ]
+      },
+      "voice": "Puck",
+      "voice_style": "warm, playful and upbeat pet lover, clear and friendly"
     },
     {
       "key": "DEM",
@@ -241,8 +247,15 @@
           "body_font": "Poppins-Regular.ttf",
           "tag_font": "Poppins-Bold.ttf",
           "line_height": 1.18
-        }
-      }
+        },
+        "reel_days": [
+          2,
+          5
+        ],
+        "reel_outro": "You're not alone. Follow Navigating Dementia Together for more gentle tips."
+      },
+      "voice": "Aoede",
+      "voice_style": "gentle, calm and reassuring, warm and unhurried"
     },
     {
       "key": "FIN",
@@ -280,8 +293,15 @@
           "upper_headline": true,
           "line_height": 1.12
         },
-        "monogram": "PD"
-      }
+        "monogram": "PD",
+        "reel_days": [
+          1,
+          4
+        ],
+        "reel_outro": "Follow Pera Decoded para sa mas maraming money tips, kabayan."
+      },
+      "voice": "Charon",
+      "voice_style": "friendly kabayan money coach, clear and confident, natural Taglish"
     },
     {
       "key": "HOME",
@@ -318,8 +338,14 @@
           "tag_font": "Poppins-Bold.ttf",
           "upper_headline": true,
           "line_height": 1.1
-        }
-      }
+        },
+        "reel_days": [
+          2,
+          5
+        ]
+      },
+      "voice": "Kore",
+      "voice_style": "bright, practical and friendly, clear and easy to follow"
     }
   ]
 }

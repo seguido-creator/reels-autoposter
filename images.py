@@ -471,6 +471,58 @@ def log_sheet(sheet):
         return ws
 
 
+# ---------------------------------------------------------------- photo reels
+def reel_due(page, label):
+    """Photo pages also post a short Reel (Meta's monetization waitlist needs 3+ Reels / 90 days):
+    on the page's reel_days (0=Mon .. 6=Sun, local time), from the LAST image slot of that day."""
+    days = page["image"].get("reel_days") or []
+    m = re.search(r"(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2})", label)
+    if not days or not m or "manual" in label:
+        return False
+    day = dt.date.fromisoformat(m.group(1))
+    return day.weekday() in days and m.group(2) == sorted(page["image"]["slots"])[-1]
+
+
+def voice_text(page, card):
+    parts = [clean(card["headline"]).rstrip(".!?") + "."]
+    body = clean(card.get("body") or "")
+    if body:
+        parts.append(body)
+    for b in card.get("bullets") or []:
+        parts.append(clean(b).rstrip(".") + ".")
+    parts.append(page["image"].get("reel_outro") or f"Follow {page['brand']} for more.")
+    return " ".join(parts)
+
+
+def make_photo_reel(page, card, png_path, out_mp4):
+    """1080x1920 Reel: the branded card over a blurred copy of itself, slow zoom, AI voiceover."""
+    import subprocess
+    import tempfile
+    from PIL import Image, ImageEnhance, ImageFilter
+    import transform
+    work = Path(tempfile.mkdtemp(prefix="preel_"))
+    wav = work / "voice.wav"
+    secs = transform.speak(voice_text(page, card), page, wav)
+    dur = min(max(secs + 1.2, 7.0), 60.0)
+    cardimg = Image.open(png_path).convert("RGB")
+    bg = _cover(cardimg, 1080, 1920).filter(ImageFilter.GaussianBlur(40))
+    bg = ImageEnhance.Brightness(bg).enhance(0.55)
+    bg.paste(cardimg, (0, (1920 - cardimg.height) // 2))
+    frame = work / "frame.png"
+    bg.resize((1296, 2304)).save(frame)  # extra pixels so the zoom stays sharp
+    frames = int(dur * 30)
+    vf = (f"zoompan=z='min(1+0.06*on/{frames},1.06)':d={frames}:"
+          "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920:fps=30,format=yuv420p")
+    cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(frame), "-i", str(wav), "-vf", vf,
+           "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+           "-c:a", "aac", "-b:a", "128k", "-af", f"apad=whole_dur={dur:.2f}", "-t", f"{dur:.2f}",
+           "-movflags", "+faststart", str(out_mp4)]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        raise RuntimeError(f"ffmpeg failed: {res.stderr[-600:]}")
+    return dur
+
+
 def process(page, cfg, ws, rows, now, force=False, preview=False):
     page_id = os.environ.get(page["page_id_env"], "").strip()
     token = os.environ.get(page["token_env"], "").strip()
@@ -512,6 +564,12 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             _, link = upload_render(drive, out, f"preview_{page['key']}_{utcnow():%Y%m%d_%H%M}.png",
                                     render_folder_id(drive), mime="image/png")
             log(f"[{page['key']}] preview card: {link}")
+            if page["image"].get("reel_days"):
+                mp4 = Path(f"preview_{page['key']}.mp4")
+                make_photo_reel(page, card, out, mp4)
+                _, link = upload_render(drive, mp4, f"preview_{page['key']}_reel_{utcnow():%Y%m%d_%H%M}.mp4",
+                                        render_folder_id(drive))
+                log(f"[{page['key']}] preview reel: {link}")
         return
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
     try:
@@ -520,6 +578,17 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
         if trend:
             note += f"; trend:{trend['angle'][:40]}"
         log(f"[{page['key']}] {label}: posted image '{card['headline']}' ({post_id})")
+        if reel_due(page, label):
+            try:
+                from autopost import publish_reel
+                mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
+                make_photo_reel(page, card, out, mp4)
+                vid, state = publish_reel(page_id, token, mp4, message, cfg["graph_api_version"])
+                note += f"; reel {vid} {state}"
+                log(f"[{page['key']}] {label}: posted photo reel {vid} ({state})")
+            except Exception as rexc:
+                note += f"; reel FAILED {str(rexc)[:150]}"
+                log(f"[{page['key']}] photo reel failed: {rexc}")
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
         log(f"[{page['key']}] {label}: image post FAILED: {exc}")
