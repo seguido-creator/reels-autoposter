@@ -389,7 +389,7 @@ def _layout(d, card, th, fg, muted, margin, width, hmax, avail=None):
     head = clean(card["headline"])
     if th.get("upper_headline"):
         head = head.upper()
-    hf, hlines = fit(d, head, th["title_font"], width, 4, list(range(hmax, 54, -4)))
+    hf, hlines = fit(d, head, th["title_font"], width, 4, list(range(hmax, 42, -4)) or [hmax])
     lh = int(hf.size * th.get("line_height", 1.12))
     for line in hlines:
         ops.append(("text", y, line, hf, fg, margin))
