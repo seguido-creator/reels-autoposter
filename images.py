@@ -480,7 +480,8 @@ def reel_due(page, label):
     if not days or not m or "manual" in label:
         return False
     day = dt.date.fromisoformat(m.group(1))
-    return day.weekday() in days and m.group(2) == sorted(page["image"]["slots"])[-1]
+    last = m.group(2) == sorted(page["image"]["slots"])[-1]
+    return day.weekday() in days and (page["image"].get("reel_all_slots") or last)
 
 
 def voice_text(page, card):
