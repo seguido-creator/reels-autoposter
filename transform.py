@@ -91,6 +91,11 @@ TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL
              "overloaded", "high demand", "timed out", "Timeout")
 
 
+def is_quota(msg):
+    """Daily/plan quota used up - retrying today is pointless."""
+    return "exceeded your current quota" in msg or "PerDay" in msg
+
+
 def with_retry(fn, tries=6, base=10):
     """Retry temporary Gemini errors (busy/overloaded/rate limit) with backoff: 10,20,40,80,120s."""
     for attempt in range(tries):
@@ -98,7 +103,7 @@ def with_retry(fn, tries=6, base=10):
             return fn()
         except Exception as exc:
             msg = str(exc)
-            if attempt == tries - 1 or not any(t in msg for t in TRANSIENT):
+            if attempt == tries - 1 or not any(t in msg for t in TRANSIENT) or is_quota(msg):
                 raise
             wait = min(base * 2 ** attempt, 120)
             log(f"Gemini busy ({msg[:80]}), retrying in {wait}s")
@@ -129,6 +134,7 @@ def generate(client, contents, config=None, rounds=3):
     round again; after `rounds` raises GeminiBusy (callers then leave the clip for later).
     Returns (resp, model)."""
     models = script_models()
+    quota_hit = set()
     for rnd in range(rounds):
         for model in list(models):
             try:
@@ -137,7 +143,11 @@ def generate(client, contents, config=None, rounds=3):
                 return resp, model
             except Exception as exc:
                 msg = str(exc)
-                if any(t in msg for t in RETIRED):
+                if is_quota(msg):
+                    log(f"Model {model}: daily quota used up, skipping it for this run")
+                    models.remove(model)
+                    quota_hit.add(model)
+                elif any(t in msg for t in RETIRED):
                     log(f"Model {model} is not available to this key, skipping it")
                     models.remove(model)
                 elif any(t in msg for t in TRANSIENT):
@@ -145,6 +155,8 @@ def generate(client, contents, config=None, rounds=3):
                 else:
                     raise
         if not models:
+            if quota_hit:
+                raise GeminiBusy("Gemini daily quota used up - will continue after it resets")
             raise RuntimeError("No Gemini model in the list is available to this API key")
         if rnd < rounds - 1:
             log(f"All Gemini models busy, waiting {90 * (rnd + 1)}s before another round")
