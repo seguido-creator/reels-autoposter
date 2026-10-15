@@ -203,6 +203,13 @@ def write_script(video_path, page, duration):
         prompt = SCRIPT_PROMPT.format(angle=page.get("content_angle", "general entertainment"),
                                       audience=page["audience"], language=page["language"],
                                       duration=duration)
+        trends = [t for t in (page.get("_trends") or []) if t.get("angle")][:6]
+        if trends:
+            prompt += ("\n\nWhat is trending in this niche right now (from this week's research). If one "
+                       "of these genuinely fits THIS clip, build on its angle in your own words with a "
+                       "stronger hook; otherwise ignore them. Never copy anyone's wording:\n"
+                       + "\n".join(f"- {t['angle']}" + (f" (hook idea: {t['hook']})" if t.get("hook") else "")
+                                   for t in trends))
         resp, used = generate(client, [uploaded, prompt],
                               types.GenerateContentConfig(response_mime_type="application/json",
                                                           temperature=0.8))

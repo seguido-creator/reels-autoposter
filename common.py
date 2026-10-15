@@ -118,6 +118,31 @@ def render_folder_id(drive):
     return drive.files().create(body=meta, fields="id").execute()["id"]
 
 
+def latest_trends(drive):
+    """Newest 'trends_*.json' file in Drive (written by the weekly trend scan).
+    Returns {page_key: [{"angle", "hook", ...}]} or {} if none / unreadable."""
+    import json
+    import tempfile
+    try:
+        q = ("name contains 'trends_' and trashed=false and 'me' in owners and "
+             "mimeType != 'application/vnd.google-apps.folder'")
+        files = drive.files().list(q=q, orderBy="createdTime desc", pageSize=5,
+                                   fields="files(id,name,createdTime)").execute().get("files", [])
+        files = [f for f in files if f["name"].endswith(".json")]
+        if not files:
+            return {}
+        tmp = Path(tempfile.mkdtemp()) / "trends.json"
+        download(drive, files[0]["id"], tmp)
+        data = json.loads(tmp.read_text(encoding="utf-8"))
+        pages = data.get("pages", data)
+        log(f"Trends loaded from {files[0]['name']}")
+        return {k.upper(): [t for t in v if isinstance(t, dict)] for k, v in pages.items()
+                if isinstance(v, list)}
+    except Exception as exc:
+        log(f"Trends not loaded: {exc}")
+        return {}
+
+
 def upload_render(drive, path, name, folder_id, mime="video/mp4"):
     from googleapiclient.http import MediaFileUpload
     media = MediaFileUpload(str(path), mimetype=mime, resumable=True,

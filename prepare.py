@@ -12,8 +12,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from common import (delete_render, download, drive_service, google_creds, load_config, log,
-                    open_sheet, parse_time, read_rows, render_folder_id, update_row,
+from common import (delete_render, download, drive_service, google_creds, latest_trends,
+                    load_config, log, open_sheet, parse_time, read_rows, render_folder_id, update_row,
                     upload_render, utcnow)
 import transform
 
@@ -125,9 +125,11 @@ def main():
     creds = google_creds()
     drive, sheet = drive_service(creds), open_sheet(creds)
     folder_id = render_folder_id(drive)
+    trends = latest_trends(drive)
     for page in cfg["pages"]:
         if only and page["key"].upper() != only:
             continue
+        page["_trends"] = trends.get(page["key"].upper(), [])
         try:
             prepare_page(page, cfg, drive, sheet, folder_id)
         except Exception as exc:

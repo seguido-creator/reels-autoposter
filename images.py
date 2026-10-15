@@ -107,7 +107,7 @@ def any_image_due(cfg, now_utc):
 
 
 # ---------------------------------------------------------------- content
-def write_card(page, recent):
+def write_card(page, recent, trend=None):
     import transform
     from google.genai import types
     client = transform._gemini_client()
@@ -117,6 +117,11 @@ def write_card(page, recent):
         audience=page["audience"], language=style.get("language") or page["language"],
         types=", ".join(style.get("types", ["fact", "tips", "myth", "question"])),
         recent="\n".join(f"- {t}" for t in recent[-40:]) or "- (none yet)")
+    if trend:
+        prompt += ("\n\nBuild THIS card on a topic that is trending in the niche this week: "
+                   f"{trend['angle']}" + (f" (hook idea: {trend['hook']})" if trend.get("hook") else "")
+                   + ". Use your own words, a stronger hook and one extra insight people did not "
+                   "expect. Never copy anyone's wording. If it would break the rules above, ignore it.")
     data = None
     for _ in range(3):  # occasionally Gemini returns an empty/odd answer - just ask again
         resp, used = transform.generate(client, prompt, types.GenerateContentConfig(
@@ -482,7 +487,13 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             return
         label = due[0]
     recent = [r["topic"] for r in mine if r.get("topic")]
-    card = write_card(page, recent)
+    # about 1 in 3 posts builds on this week's trend research (each trend used once per page)
+    import random
+    used_trends = " ".join(r.get("note", "") for r in mine)
+    fresh = [t for t in (page.get("_trends") or [])
+             if t.get("angle") and f"trend:{t['angle'][:40]}" not in used_trends]
+    trend = random.choice(fresh) if fresh and (preview or random.random() < cfg.get("trend_share", 0.35)) else None
+    card = write_card(page, recent, trend)
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
     used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
@@ -506,6 +517,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     try:
         post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
         note = f"text {card['model']}; photo {card['photo']}"
+        if trend:
+            note += f"; trend:{trend['angle'][:40]}"
         log(f"[{page['key']}] {label}: posted image '{card['headline']}' ({post_id})")
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
@@ -538,12 +551,15 @@ def main():
     if not os.environ.get("GOOGLE_REFRESH_TOKEN", "").strip():
         log("Setup not finished (Google secrets missing)")
         return
-    from common import google_creds, open_sheet
-    ws = log_sheet(open_sheet(google_creds()))
+    from common import drive_service, google_creds, latest_trends, open_sheet
+    creds = google_creds()
+    ws = log_sheet(open_sheet(creds))
     rows = ws.get_all_records(expected_headers=LOG_HEADER) if ws.row_count > 1 else []
+    trends = latest_trends(drive_service(creds))
     for page in all_pages(cfg):
         if only and page["key"].upper() != only:
             continue
+        page["_trends"] = trends.get(page["key"].upper(), [])
         try:
             process(page, cfg, ws, rows, now, force=bool(args.force), preview=bool(args.preview))
         except Exception as exc:
