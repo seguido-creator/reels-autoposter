@@ -102,12 +102,20 @@ def write_card(page, recent):
         audience=page["audience"], language=style.get("language") or page["language"],
         types=", ".join(style.get("types", ["fact", "tips", "myth", "question"])),
         recent="\n".join(f"- {t}" for t in recent[-40:]) or "- (none yet)")
-    resp, used = transform.generate(client, prompt, types.GenerateContentConfig(
-        response_mime_type="application/json", temperature=0.9))
-    data = json.loads(resp.text)
-    if isinstance(data, list):
-        data = data[0]
-    if not str(data.get("headline", "")).strip() or not str(data.get("caption", "")).strip():
+    data = None
+    for _ in range(3):  # occasionally Gemini returns an empty/odd answer - just ask again
+        resp, used = transform.generate(client, prompt, types.GenerateContentConfig(
+            response_mime_type="application/json", temperature=0.9))
+        try:
+            data = json.loads(resp.text or "{}")
+        except Exception:
+            data = {}
+        if isinstance(data, list):
+            data = data[0] if data and isinstance(data[0], dict) else {}
+        if str(data.get("headline", "")).strip() and str(data.get("caption", "")).strip():
+            break
+        log(f"[{page['key']}] AI card came back incomplete, asking again")
+    else:
         raise RuntimeError("AI card missing headline/caption")
     data["bullets"] = [clean(b) for b in (data.get("bullets") or []) if clean(b)][:5]
     tags = data.get("hashtags") or []
@@ -526,7 +534,8 @@ def main():
         try:
             process(page, cfg, ws, rows, now, force=bool(args.force), preview=bool(args.preview))
         except Exception as exc:
-            log(f"[{page['key']}] image error: {exc}")
+            import traceback
+            log(f"[{page['key']}] image error: {exc}\n{traceback.format_exc()[-1500:]}")
 
 
 if __name__ == "__main__":
