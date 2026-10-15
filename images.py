@@ -635,6 +635,55 @@ def main():
         except Exception as exc:
             import traceback
             log(f"[{page['key']}] image error: {exc}\n{traceback.format_exc()[-1500:]}")
+    if not (args.force or args.preview):
+        try:
+            cross_share(cfg, ws, rows, now)
+        except Exception as exc:
+            log(f"cross-share error: {exc}")
+
+
+# ---------------------------------------------------------------- sister-page cross-shares
+def cross_share(cfg, ws, rows, now):
+    """Once a week (Sunday, local afternoon) each page shares one recent post of its sister page."""
+    import requests
+    pairs = cfg.get("cross_share") or {}
+    pages = {p["key"]: p for p in all_pages(cfg)}
+    for key, partner_key in pairs.items():
+        page, partner = pages.get(key), pages.get(partner_key)
+        if not page or not partner:
+            continue
+        local = now.astimezone(ZoneInfo(page["timezone"]))
+        if local.weekday() != 6 or local.hour < 12:
+            continue
+        label = f"share {local.strftime('%G-W%V')}"
+        if any(r.get("page") == key and r.get("slot") == label for r in rows):
+            continue
+        if sum(1 for r in rows if r.get("page") == key and r.get("slot") == label + " (failed)") >= 2:
+            continue
+        posts = [r for r in rows if r.get("page") == partner_key and str(r.get("fb_post_id", "")).strip()
+                 and "failed" not in r.get("slot", "")]
+        page_id = os.environ.get(page["page_id_env"], "").strip()
+        token = os.environ.get(page["token_env"], "").strip()
+        if not posts or not page_id or not token:
+            continue
+        best = posts[-1]
+        lang = (page.get("language") or "").lower()
+        footer = clean(partner["image"].get("footer", "")).rstrip(".")
+        if "taglish" in lang or "tagalog" in lang:
+            msg = f"Mula sa sister page namin na {partner['brand']} - {footer}. I-follow niyo rin sila!"
+        else:
+            msg = f"From our sister page {partner['brand']}: {footer}. Worth a follow if you like this kind of thing."
+        link = f"https://www.facebook.com/{best['fb_post_id']}"
+        r = requests.post(f"https://graph.facebook.com/{cfg['graph_api_version']}/{page_id}/feed",
+                          data={"message": msg, "link": link, "access_token": token}, timeout=60)
+        ok = r.ok
+        pid = r.json().get("id", "") if ok else ""
+        note = f"shared {partner_key} post {best['fb_post_id']}" if ok else f"share failed {r.status_code} {r.text[:200]}"
+        log(f"[{key}] cross-share of {partner_key}: {note}")
+        ws.append_row([key, label if ok else label + " (failed)", utcnow().isoformat(timespec="seconds"),
+                       "share", f"sister {partner_key}", clean(best.get("headline", "")), pid, note],
+                      value_input_option="RAW")
+        rows.append({"page": key, "slot": label if ok else label + " (failed)"})
 
 
 if __name__ == "__main__":

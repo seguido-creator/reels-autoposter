@@ -371,5 +371,14 @@
       "voice": "Kore",
       "voice_style": "bright, practical and friendly, clear and easy to follow"
     }
-  ]
+  ],
+  "cross_share": {
+    "PH": "FIN",
+    "FIN": "PH",
+    "UAE": "HOME",
+    "HOME": "UAE",
+    "US": "PAWS",
+    "PAWS": "US",
+    "DEM": "PAWS"
+  }
 }
