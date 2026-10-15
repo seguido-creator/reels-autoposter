@@ -78,7 +78,7 @@ def image_slots(page, now_utc, window_hours):
 
 
 def any_image_due(cfg, now_utc):
-    return any(image_slots(p, now_utc, cfg["slot_window_hours"]) for p in all_pages(cfg))
+    return any(image_slots(p, now_utc, cfg.get("image_window_hours", 5)) for p in all_pages(cfg))
 
 
 # ---------------------------------------------------------------- content
@@ -324,7 +324,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     if force or preview:
         label = "img manual " + now.astimezone(ZoneInfo(page["timezone"])).strftime("%Y-%m-%d %H:%M")
     else:
-        due = [s for s in image_slots(page, now, cfg["slot_window_hours"]) if s not in done]
+        due = [s for s in image_slots(page, now, cfg.get("image_window_hours", 5)) if s not in done]
         if not due:
             return
         label = due[0]
