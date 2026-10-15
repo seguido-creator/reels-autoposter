@@ -241,7 +241,7 @@
       "page_id_env": "FB_PAGE_ID_FIN",
       "token_env": "FB_TOKEN_FIN",
       "timezone": "Asia/Manila",
-      "brand": "FILINVEST Global",
+      "brand": "Pera Decoded",
       "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
       "language": "Simple English with a light, natural Taglish touch. Friendly 'kabayan' tone.",
       "image": {
@@ -270,7 +270,8 @@
           "tag_font": "Poppins-Bold.ttf",
           "upper_headline": true,
           "line_height": 1.12
-        }
+        },
+        "monogram": "PD"
       }
     },
     {
