@@ -5,6 +5,10 @@
   "gemini_fallback_models": [
     "gemini-flash-latest"
   ],
+  "image_models": [
+    "gemini-nano-banana-2.1",
+    "gemini-3.1-flash-lite-image"
+  ],
   "max_reel_seconds": 89,
   "min_source_seconds": 3,
   "slot_window_hours": 3,

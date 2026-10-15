@@ -53,7 +53,15 @@ Return JSON with exactly these keys:
     "Myth: ..." and "Fact: ..."; [] for other types),
 "caption": Facebook caption, 2-4 short lines that add a little more value, ending with a
     genuine question. Max 2 emojis,
-"hashtags": 3-5 relevant hashtags."""
+"hashtags": 3-5 relevant hashtags,
+"image_prompt": a vivid description (40-70 words, in English) of ONE eye-catching, realistic
+    editorial-style photo that illustrates this card's topic for this audience. Natural light,
+    shallow depth of field, rich but realistic colours. Absolutely NO text, letters, numbers,
+    logos, watermarks, brand names or recognisable real people/places in the image."""
+
+IMAGE_STYLE = ("Photorealistic, high-end editorial photography, sharp subject, pleasing composition "
+               "with the main subject in the upper two thirds of the frame. No text, no letters, "
+               "no logos, no watermarks, no brand names.")
 
 
 # ---------------------------------------------------------------- pages
@@ -106,6 +114,37 @@ def write_card(page, recent):
     data["hashtags"] = [t if t.startswith("#") else f"#{t}" for t in tags][:5]
     data["model"] = used
     return data
+
+
+def generate_photo(page, card, cfg):
+    """Paid Gemini image model -> PIL image (4:5). Uses its own key (GEMINI_IMAGE_API_KEY) so the
+    free text/voice key stays on the free tier. Returns (image, model) or (None, reason)."""
+    import base64
+    import io
+    from PIL import Image
+    key = os.environ.get("GEMINI_IMAGE_API_KEY", "").strip()
+    if not key:
+        return None, "no image key"
+    prompt = str(card.get("image_prompt") or "").strip()
+    if not prompt:
+        return None, "no image prompt"
+    from google import genai
+    import transform
+    client = genai.Client(api_key=key)
+    last = ""
+    for model in cfg.get("image_models", ["gemini-nano-banana-2.1"]):
+        try:
+            it = transform.with_retry(lambda: client.interactions.create(
+                model=model, input=f"{prompt}\n\n{IMAGE_STYLE}",
+                response_format={"type": "image", "mime_type": "image/jpeg",
+                                 "aspect_ratio": "4:5", "image_size": "1K"}), tries=3)
+            data = it.output_image.data
+            raw = base64.b64decode(data) if isinstance(data, str) else bytes(data)
+            return Image.open(io.BytesIO(raw)).convert("RGB"), model
+        except Exception as exc:
+            last = f"{model}: {str(exc)[:160]}"
+            log(f"[{page['key']}] image model {model} failed: {str(exc)[:160]}")
+    return None, last
 
 
 def clean(text):
@@ -177,7 +216,17 @@ def draw_background(img, theme):
     img.paste(deco, (0, 0), deco)
 
 
-def render_card(page, card, out_path):
+def _cover(photo, w, h):
+    """Scale+crop a photo to fill w x h, keeping the top (subject) area."""
+    from PIL import Image
+    s = max(w / photo.width, h / photo.height)
+    p = photo.resize((int(photo.width * s) + 1, int(photo.height * s) + 1), Image.LANCZOS)
+    left = (p.width - w) // 2
+    top = max(0, min(int((p.height - h) * 0.3), p.height - h))
+    return p.crop((left, top, left + w, top + h))
+
+
+def render_card(page, card, out_path, photo=None):
     from PIL import Image, ImageDraw
     th = page["image"]["theme"]
     img = Image.new("RGB", (W, H))
@@ -187,21 +236,41 @@ def render_card(page, card, out_path):
     on_acc = hex_rgb(th.get("on_accent", "#FFFFFF"))
     margin, width = 90, W - 180
 
-    # panel
-    if th.get("panel"):
-        panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        ImageDraw.Draw(panel).rounded_rectangle([50, 60, W - 50, H - 200], 48,
-                                                fill=hex_rgb(th["panel"]) + (235,))
-        img.paste(panel, (0, 0), panel)
+    if photo is not None:
+        # ---- photo layout: AI photo fills the card, text sits on a brand-coloured panel below
+        img.paste(_cover(photo, W, H), (0, 0))
+        card = dict(card, bullets=(card.get("bullets") or [])[:3])  # keep the photo visible
+        avail = 600
+        for hmax in range(88, 50, -6):
+            ops, y, body_size = _layout(d, card, th, fg, muted, margin, width, hmax, avail=avail)
+            if body_size >= 40 and y <= avail:
+                break
+        panel_top = H - 190 - y - 64
+        shade = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        sd = ImageDraw.Draw(shade)
+        for i in range(140):  # soft shadow above the panel so the edge reads on any photo
+            sd.line([(0, panel_top - 140 + i), (W, panel_top - 140 + i)], fill=(0, 0, 0, int(i * 0.6)))
+        sd.rounded_rectangle([28, panel_top, W - 28, H - 28], 44,
+                             fill=hex_rgb(th.get("panel") or th["bg_top"]) + (252,))
+        img.paste(shade, (0, 0), shade)
         d = ImageDraw.Draw(img)
+        off = panel_top + 56
+    else:
+        # panel
+        if th.get("panel"):
+            panel = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            ImageDraw.Draw(panel).rounded_rectangle([50, 60, W - 50, H - 200], 48,
+                                                    fill=hex_rgb(th["panel"]) + (235,))
+            img.paste(panel, (0, 0), panel)
+            d = ImageDraw.Draw(img)
 
-    # ---- layout first (measure), then draw centred between the top and the footer
-    for hmax in range(112, 56, -8):  # shrink the headline until the body text stays readable
-        ops, y, body_size = _layout(d, card, th, fg, muted, margin, width, hmax)
-        if body_size >= 42:
-            break
-    top_limit, bottom_limit = 120, H - 230
-    off = top_limit + max(0, (bottom_limit - top_limit - y) // 2)
+        # ---- layout first (measure), then draw centred between the top and the footer
+        for hmax in range(112, 56, -8):  # shrink the headline until the body text stays readable
+            ops, y, body_size = _layout(d, card, th, fg, muted, margin, width, hmax)
+            if body_size >= 42:
+                break
+        top_limit, bottom_limit = 120, H - 230
+        off = top_limit + max(0, (bottom_limit - top_limit - y) // 2)
     for op in ops:
         kind, oy = op[0], op[1] + off
         if kind == "tag":
@@ -220,7 +289,7 @@ def render_card(page, card, out_path):
     return out_path
 
 
-def _layout(d, card, th, fg, muted, margin, width, hmax):
+def _layout(d, card, th, fg, muted, margin, width, hmax, avail=None):
     ops, y, body_size = [], 0, 99
     tag = clean(card.get("tag") or "").upper()[:26]
     if tag:
@@ -241,7 +310,7 @@ def _layout(d, card, th, fg, muted, margin, width, hmax):
     y += 60
 
     top_limit, bottom_limit = 120, H - 230
-    room = bottom_limit - top_limit - y
+    room = (avail if avail else bottom_limit - top_limit) - y
     bullets = card.get("bullets") or []
     if bullets:
         for size in range(56, 30, -2):
@@ -331,7 +400,9 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     recent = [r["topic"] for r in mine if r.get("topic")]
     card = write_card(page, recent)
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
-    render_card(page, card, out)
+    photo, photo_info = generate_photo(page, card, cfg)
+    card["photo"] = photo_info if photo is not None else f"no photo ({photo_info})"
+    render_card(page, card, out, photo=photo)
     if preview:
         print(json.dumps(card, ensure_ascii=False, indent=1))
         if os.environ.get("GOOGLE_REFRESH_TOKEN"):
@@ -344,7 +415,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
     try:
         post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
-        note = f"model {card['model']}"
+        note = f"text {card['model']}; photo {card['photo']}"
         log(f"[{page['key']}] {label}: posted image '{card['headline']}' ({post_id})")
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
