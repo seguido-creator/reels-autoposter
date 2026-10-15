@@ -31,6 +31,7 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
       PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
       FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
       FB_TOKEN_US: ${{ secrets.FB_TOKEN_US }}
