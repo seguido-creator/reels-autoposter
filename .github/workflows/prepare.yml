@@ -2,7 +2,7 @@ name: Prepare Reels
 
 on:
   schedule:
-    - cron: "20 1,13 * * *"   # twice a day (05:20 and 17:20 UAE time)
+    - cron: "20 1,7,13,19 * * *"   # 4x a day (05:20, 11:20, 17:20, 23:20 UAE time); exits fast when buffers are full
   workflow_dispatch:
     inputs:
       page:
