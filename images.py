@@ -488,8 +488,6 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             log(f"[{page['key']}] preview card: {link}")
         return
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
-    if card.get("credit"):
-        message += f"\n\n📷 {card['credit']}"
     try:
         post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
         note = f"text {card['model']}; photo {card['photo']}"
