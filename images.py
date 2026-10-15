@@ -57,7 +57,9 @@ Return JSON with exactly these keys:
 "image_prompt": a vivid description (40-70 words, in English) of ONE eye-catching, realistic
     editorial-style photo that illustrates this card's topic for this audience. Natural light,
     shallow depth of field, rich but realistic colours. Absolutely NO text, letters, numbers,
-    logos, watermarks, brand names or recognisable real people/places in the image."""
+    logos, watermarks, brand names or recognisable real people/places in the image,
+"photo_search": 2-4 simple English words to find a matching real stock photo
+    (e.g. "golden retriever puppy", "sports car engine", "elderly hands holding tea")."""
 
 IMAGE_STYLE = ("Photorealistic, high-end editorial photography, sharp subject, pleasing composition "
                "with the main subject in the upper two thirds of the frame. No text, no letters, "
@@ -114,6 +116,35 @@ def write_card(page, recent):
     data["hashtags"] = [t if t.startswith("#") else f"#{t}" for t in tags][:5]
     data["model"] = used
     return data
+
+
+def stock_photo(page, card, used_ids):
+    """Free real photo from Pexels (needs PEXELS_API_KEY). Picks a portrait photo for the card's
+    search words that this Page hasn't used before. Returns (image, credit, photo_id) or Nones."""
+    import io
+    import random
+    import requests
+    from PIL import Image
+    key = os.environ.get("PEXELS_API_KEY", "").strip()
+    query = str(card.get("photo_search") or "").strip()
+    if not key or not query:
+        return None, None, None
+    for q in (query, " ".join(query.split()[:2])):
+        try:
+            r = requests.get("https://api.pexels.com/v1/search", headers={"Authorization": key},
+                             params={"query": q, "orientation": "portrait", "per_page": 30},
+                             timeout=30)
+            r.raise_for_status()
+            photos = [p for p in r.json().get("photos", []) if str(p["id"]) not in used_ids]
+        except Exception as exc:
+            log(f"[{page['key']}] Pexels search failed: {str(exc)[:120]}")
+            return None, None, None
+        if photos:
+            p = random.choice(photos[:12])
+            raw = requests.get(p["src"].get("large2x") or p["src"]["original"], timeout=60).content
+            credit = f"Photo: {p.get('photographer', 'Pexels')} / Pexels"
+            return Image.open(io.BytesIO(raw)).convert("RGB"), credit, str(p["id"])
+    return None, None, None
 
 
 def generate_photo(page, card, cfg):
@@ -400,8 +431,14 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     recent = [r["topic"] for r in mine if r.get("topic")]
     card = write_card(page, recent)
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
-    photo, photo_info = generate_photo(page, card, cfg)
-    card["photo"] = photo_info if photo is not None else f"no photo ({photo_info})"
+    # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
+    used = {m for r in mine for m in re.findall(r"pexels:(\d+)", r.get("note", ""))}
+    photo, credit, pid = stock_photo(page, card, used)
+    if photo is not None:
+        card["photo"], card["credit"] = f"pexels:{pid}", credit
+    else:
+        photo, photo_info = generate_photo(page, card, cfg)
+        card["photo"] = photo_info if photo is not None else f"no photo ({photo_info})"
     render_card(page, card, out, photo=photo)
     if preview:
         print(json.dumps(card, ensure_ascii=False, indent=1))
@@ -413,6 +450,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             log(f"[{page['key']}] preview card: {link}")
         return
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
+    if card.get("credit"):
+        message += f"\n\n📷 {card['credit']}"
     try:
         post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
         note = f"text {card['model']}; photo {card['photo']}"
