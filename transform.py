@@ -116,21 +116,40 @@ def script_models():
     return out
 
 
-def generate(client, contents, config=None):
-    """generate_content with retries, then fallback to the next model. Returns (resp, model)."""
-    last = None
-    for model in script_models():
-        try:
-            resp = with_retry(lambda: client.models.generate_content(
-                model=model, contents=contents, config=config), tries=3)
-            return resp, model
-        except Exception as exc:
-            msg = str(exc)
-            if not any(t in msg for t in TRANSIENT + ("404", "NOT_FOUND", "not found")):
-                raise
-            log(f"Model {model} unavailable ({msg[:60]}), trying the next one")
-            last = exc
-    raise last
+class GeminiBusy(Exception):
+    """Every Gemini model is overloaded/unavailable right now - try again in a later run."""
+
+
+RETIRED = ("404", "NOT_FOUND", "not found", "no longer available")
+
+
+def generate(client, contents, config=None, rounds=3):
+    """generate_content with retries, falling back through the model list.
+    Retired models (404) are skipped for the rest of the run. If all are busy, wait and go
+    round again; after `rounds` raises GeminiBusy (callers then leave the clip for later).
+    Returns (resp, model)."""
+    models = script_models()
+    for rnd in range(rounds):
+        for model in list(models):
+            try:
+                resp = with_retry(lambda: client.models.generate_content(
+                    model=model, contents=contents, config=config), tries=3)
+                return resp, model
+            except Exception as exc:
+                msg = str(exc)
+                if any(t in msg for t in RETIRED):
+                    log(f"Model {model} is not available to this key, skipping it")
+                    models.remove(model)
+                elif any(t in msg for t in TRANSIENT):
+                    log(f"Model {model} busy ({msg[:60]}), trying the next one")
+                else:
+                    raise
+        if not models:
+            raise RuntimeError("No Gemini model in the list is available to this API key")
+        if rnd < rounds - 1:
+            log(f"All Gemini models busy, waiting {90 * (rnd + 1)}s before another round")
+            time.sleep(90 * (rnd + 1))
+    raise GeminiBusy("All Gemini models were busy (high demand)")
 
 
 def write_script(video_path, page, duration):

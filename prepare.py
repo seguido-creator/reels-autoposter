@@ -20,7 +20,7 @@ import transform
 MAX_ATTEMPTS_EXTRA = 4  # broken/unsuitable clips we tolerate per run before giving up
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi", ".3gp", ".mpeg", ".mpg"}
 RETRYABLE = ("mime type", "mimetype", "503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED",
-             "high demand", "overloaded")
+             "high demand", "overloaded", "NOT_FOUND", "no longer available")
 
 
 def is_retryable(note):
@@ -103,6 +103,11 @@ def prepare_page(page, cfg, drive, sheet, folder_id):
         except transform.Unsuitable as exc:
             update_row(ws, r, {"status": "UNSUITABLE", "note": str(exc)})
             log(f"[{page['key']}] row {r} unsuitable: {exc}")
+        except transform.GeminiBusy as exc:
+            # not the clip's fault: leave it in the queue and stop this page until the next run
+            update_row(ws, r, {"status": "", "note": "Gemini busy - will retry next run"})
+            log(f"[{page['key']}] Gemini busy, stopping this page for now: {exc}")
+            break
         except Exception as exc:
             update_row(ws, r, {"status": "FAILED", "note": str(exc)[:450]})
             log(f"[{page['key']}] row {r} FAILED: {exc}")
