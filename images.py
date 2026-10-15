@@ -43,6 +43,21 @@ Rules:
 - Respectful, positive, nothing political, religious, sexual or shocking.
 - Card text must be SHORT so it is readable on a phone.
 
+How the algorithm decides (follow this):
+Facebook first shows each post to a small test group picked from what the post is "about", and
+pushes it wider only if that group stops, saves, comments and shares.
+- Make the topic obvious: name it plainly in the headline and the first caption line.
+- Pick a non-obvious angle: something most people get wrong, a surprising "why", or a fresh take
+  on a familiar thing. Skip anything everyone already knows.
+- Frame it broadly so anyone in the audience gets it instantly; where true and relevant, compare
+  with something everyone knows (a famous brand, landmark or everyday object).
+- Stay inside the page niche.
+- "hot_take" cards: one bold opinion you can defend with facts, clearly framed as opinion
+  (e.g. "Hot take: ..."), on a harmless debate inside the niche. Never about real people,
+  politics, religion, health decisions or specific financial products.
+- End the caption with a fair question people will have opinions on. Debate is good;
+  insults, negativity and bait are not.
+
 Return JSON with exactly these keys:
 "type": one of {types},
 "topic": 3-6 word label for this topic (used to avoid repeats),

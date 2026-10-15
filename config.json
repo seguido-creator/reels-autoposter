@@ -49,7 +49,8 @@
           "fact",
           "tips",
           "myth",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#1E1E22",
@@ -100,7 +101,8 @@
           "fact",
           "tips",
           "myth",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#18203A",
@@ -148,7 +150,8 @@
           "fact",
           "tips",
           "myth",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#FFC425",
@@ -187,7 +190,8 @@
           "fact",
           "tips",
           "myth",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#FFF4E6",
@@ -259,7 +263,8 @@
           "tips",
           "myth",
           "fact",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#0F2742",
@@ -297,7 +302,8 @@
           "tips",
           "myth",
           "fact",
-          "question"
+          "question",
+          "hot_take"
         ],
         "theme": {
           "bg_top": "#F6F8F4",

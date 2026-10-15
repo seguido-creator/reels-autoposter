@@ -56,14 +56,29 @@ Audience: {audience}
 Language and tone for ALL text and voiceover: {language}
 Clip length: {duration:.1f} seconds.
 
+How the algorithm decides (follow this):
+Facebook first shows each reel to a small test group picked from what the reel is "about", then
+pushes it wider only if that group watches to the end, comments and shares.
+- Make the topic obvious: name it plainly in the hook, in the first spoken sentence and in the
+  first caption line (e.g. "turbo flutter", "infinity pool", "why cats knead"), so the right
+  test group sees it.
+- Lead with your strongest TRUE claim or most surprising angle, not a vague teaser. A non-obvious
+  take on a familiar thing beats a plain description.
+- Frame it broadly so anyone scrolling gets it instantly; where it is true and relevant, compare
+  with something everyone knows (a famous car, a well-known landmark, an everyday object).
+- Stay inside the page niche; never drift to unrelated topics.
+- End the caption with a fair two-sided question people will have opinions on
+  (e.g. "Manual or automatic - which would you pick?"). Debate is good; insults, politics,
+  religion, negativity about real people and bait are not.
+
 Return JSON with exactly these keys:
 "skip_reason": "" normally. Fill it if the clip does not fit the page niche, or must not be posted: graphic violence or
     injury, sexual content, dangerous acts people could copy, a child as the main subject in a
     private or embarrassing moment, humiliation of a private person, hate, or political content.
 "value_score": integer 1-5. How much REAL insight you can add (5 = clear, interesting
     explanation or context; 1 = nothing to add beyond describing the clip).
-"hook": on-screen title for the intro, max 7 words, no emojis, no quotes, sparks curiosity
-    about THIS clip.
+"hook": on-screen title for the intro, max 7 words, no emojis, no quotes. Names the topic and
+    makes a bold, surprising but true point or promise about THIS clip.
 "intro_vo": spoken intro, ONE sentence, max 14 words, a question or teaser that sets up the clip.
 "insight_vo": spoken explainer, 40-65 words. Explain WHY or HOW, give context, a practical tip,
     a fun but TRUE fact connected to what we see, or an honest opinion clearly framed as opinion.
