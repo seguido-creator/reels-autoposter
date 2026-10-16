@@ -65,7 +65,7 @@ jobs:
       - name: Install tools
         if: ${{ steps.check.outputs.due == 'true' || env.PAGE != '' }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
           pip install -q -r requirements.txt pillow fonttools brotli
           python fetch_fonts.py
 
