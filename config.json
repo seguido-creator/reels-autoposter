@@ -65,7 +65,19 @@
           "tag_font": "BebasNeue.ttf",
           "upper_headline": true,
           "line_height": 1.1
-        }
+        },
+        "reel_mode": "explainer",
+        "reel_fallback_query": "sports car road",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_all_slots": true
       }
     },
     {
@@ -116,7 +128,19 @@
           "body_font": "Poppins-Regular.ttf",
           "tag_font": "Poppins-Bold.ttf",
           "line_height": 1.18
-        }
+        },
+        "reel_mode": "explainer",
+        "reel_fallback_query": "luxury hotel",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_all_slots": true
       }
     },
     {
@@ -166,7 +190,19 @@
           "body_font": "Baloo-SemiBold.ttf",
           "tag_font": "Baloo-ExtraBold.ttf",
           "line_height": 1.05
-        }
+        },
+        "reel_mode": "explainer",
+        "reel_fallback_query": "dog cat",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_all_slots": true
       }
     }
   ],
@@ -215,7 +251,9 @@
           5,
           6
         ],
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "dog cat pet"
       },
       "voice": "Puck",
       "voice_style": "warm, playful and upbeat pet lover, clear and friendly"
@@ -264,7 +302,9 @@
           6
         ],
         "reel_outro": "You're not alone. Follow Navigating Dementia Together for more gentle tips.",
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "elderly hands"
       },
       "voice": "Aoede",
       "voice_style": "gentle, calm and reassuring, warm and unhurried"
@@ -316,7 +356,9 @@
           6
         ],
         "reel_outro": "Follow Pera Decoded para sa mas maraming money tips, kabayan.",
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "money coins"
       },
       "voice": "Charon",
       "voice_style": "friendly kabayan money coach, clear and confident, natural Taglish"
@@ -366,7 +408,9 @@
           5,
           6
         ],
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "clean home interior"
       },
       "voice": "Kore",
       "voice_style": "bright, practical and friendly, clear and easy to follow"

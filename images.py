@@ -524,6 +524,21 @@ def make_photo_reel(page, card, png_path, out_mp4):
     return dur
 
 
+def make_reel(page, card, png_path, out_mp4, rows):
+    """Explainer Reel (new multi-clip edit) when reel_mode is 'explainer'; static photo-Reel otherwise
+    or as a fallback. Returns (caption or None, note)."""
+    if page["image"].get("reel_mode") == "explainer":
+        try:
+            import explainer
+            used = {m for r in rows if r.get("page") == page["key"] for m in re.findall(r"pv\d+", r.get("note", ""))}
+            _, msg, ids = explainer.make(page, card, out_mp4, used)
+            return msg, "explainer " + " ".join(ids)
+        except Exception as exc:
+            log(f"[{page['key']}] explainer failed, using photo reel: {str(exc)[:200]}")
+    make_photo_reel(page, card, png_path, out_mp4)
+    return None, "photo"
+
+
 def process(page, cfg, ws, rows, now, force=False, preview=False):
     page_id = os.environ.get(page["page_id_env"], "").strip()
     token = os.environ.get(page["token_env"], "").strip()
@@ -567,7 +582,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             log(f"[{page['key']}] preview card: {link}")
             if page["image"].get("reel_days"):
                 mp4 = Path(f"preview_{page['key']}.mp4")
-                make_photo_reel(page, card, out, mp4)
+                rmsg, rnote = make_reel(page, card, out, mp4, rows)
+                log(f"[{page['key']}] preview reel type: {rnote}; caption: {(rmsg or '')[:200]}")
                 _, link = upload_render(drive, mp4, f"preview_{page['key']}_reel_{utcnow():%Y%m%d_%H%M}.mp4",
                                         render_folder_id(drive))
                 log(f"[{page['key']}] preview reel: {link}")
@@ -583,9 +599,9 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             try:
                 from autopost import publish_reel
                 mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
-                make_photo_reel(page, card, out, mp4)
-                vid, state = publish_reel(page_id, token, mp4, message, cfg["graph_api_version"])
-                note += f"; reel {vid} {state}"
+                rmsg, rnote = make_reel(page, card, out, mp4, rows)
+                vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
+                note += f"; reel {vid} {state} ({rnote})"
                 log(f"[{page['key']}] {label}: posted photo reel {vid} ({state})")
             except Exception as rexc:
                 note += f"; reel FAILED {str(rexc)[:150]}"
