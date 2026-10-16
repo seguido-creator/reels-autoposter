@@ -211,14 +211,24 @@ def check():
     else:
         result("Gemini", False, "GEMINI_API_KEY secret missing")
 
-    for p in cfg["pages"]:
+    for p in cfg["pages"] + cfg.get("image_pages", []):
         pid, tok = os.environ.get(p["page_id_env"], ""), os.environ.get(p["token_env"], "")
         if not pid or not tok:
             print(f"SKIP  Facebook {p['key']}  (secrets not added yet)")
             continue
         r = requests.get(f"https://graph.facebook.com/{cfg['graph_api_version']}/{pid}",
                          params={"fields": "name", "access_token": tok}, timeout=30)
-        result(f"Facebook {p['key']}", r.ok, r.json().get("name", r.text[:200]))
+        expiry = ""
+        try:  # 0 = never expires (what we want for page tokens)
+            d = requests.get(f"https://graph.facebook.com/{cfg['graph_api_version']}/debug_token",
+                             params={"input_token": tok, "access_token": tok}, timeout=30).json().get("data", {})
+            exp = d.get("expires_at")
+            expiry = "token never expires" if exp == 0 else f"TOKEN EXPIRES at unix {exp}" if exp else ""
+        except Exception:
+            pass
+        name = r.json().get("name", r.text[:200])
+        good = r.ok and "EXPIRES" not in expiry
+        result(f"Facebook {p['key']}", good, f"{name} - {expiry}".strip(" -"))
 
     print("\nALL GOOD" if ok else "\nFix the FAIL lines above (see README troubleshooting).")
     sys.exit(0 if ok else 1)
