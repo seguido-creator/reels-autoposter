@@ -26,25 +26,38 @@ Today's topic (turn it into a Reel; you may add one extra genuinely useful insig
 Headline: {headline}
 Details: {details}
 
+Build trust the way good teachers do (problem first, then proof by logic):
+- Open on a REAL problem or moment this audience recognises from their own life (a specific situation,
+  not a generic topic). The viewer should think "that's me".
+- Promise one concrete, realistic outcome they get by the end.
+- Give the answer, and for each point say WHY it works in plain words (the reason is what builds trust).
+- Include one honest limit or caveat (when it does not apply, or when to ask a professional).
+- Sound like a helpful friend who knows the subject, not a salesperson. No hype, no income or result promises.
+
 Rules:
 - Only well-established facts. Never invent statistics, studies, names, prices, laws or dates.
 - No medical, legal or financial advice for individuals; general education only.
-- No engagement bait ("like if", "share if", "comment YES", "watch till the end").
-- The FIRST sentence names the topic and makes a bold but true point (the hook).
-- Spoken script 60-85 words in total, natural and conversational, short sentences.
+- No engagement bait ("like if", "share if", "comment YES", "save this", "watch till the end").
+- The FIRST sentence names the problem and makes a bold but true point (the hook).
 - End with one short, genuine question to the viewer.
+{format_rules}
 
 Return JSON with exactly these keys:
 "hook": on-screen opening title, max 6 words, no emojis,
-"scenes": 4 to 6 objects in order, each with
+"scenes": {scene_count} objects in order, each with
     "vo": the part of the script spoken during this scene (1-2 short sentences),
-    "search": 2-4 plain ENGLISH words describing ONE concrete, filmable subject for a real stock
+    {num_field}"search": 2-4 plain ENGLISH words describing ONE concrete, filmable subject for a real stock
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
               Every search phrase MUST include this page's main visual subject ({subject}) or a close
               variant, so the footage clearly fits the page (e.g. "{subject} closeup", "{subject} at night").
 "caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
+
+STORY_RULES = "- Spoken script 60-85 words in total, natural and conversational, short sentences."
+LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Number one...", "Number two..."),
+  most surprising or most useful point LAST so people keep watching. Each point = what to do + why it works.
+- Spoken script 120-150 words in total, natural and conversational, short sentences."""
 
 W, H, FPS = 1080, 1920, 30
 
@@ -54,10 +67,17 @@ def write_script(page, card):
     from google.genai import types
     client = transform._gemini_client()
     details = " ".join([str(card.get("body") or "")] + [str(b) for b in card.get("bullets") or []]).strip()
+    as_list = use_list(page, card)
+    n = random.choice([3, 4, 5])
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
                            language=page["image"].get("language") or page["language"],
                            headline=card["headline"], details=details or "-",
-                           subject=page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", ""))
+                           subject=page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", ""),
+                           format_rules=LIST_RULES.format(n=n) if as_list else STORY_RULES,
+                           scene_count=f"{n + 2} (1 intro scene, {n} numbered scenes, 1 closing scene)" if as_list
+                           else "4 to 6",
+                           num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
+                           if as_list else "")
     for _ in range(3):
         resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
             response_mime_type="application/json", temperature=0.8))
@@ -69,11 +89,23 @@ def write_script(page, card):
             data = data[0] if data and isinstance(data[0], dict) else {}
         scenes = [s for s in (data.get("scenes") or []) if isinstance(s, dict)
                   and str(s.get("vo", "")).strip() and str(s.get("search", "")).strip()]
-        if data.get("hook") and 3 <= len(scenes) <= 7:
+        if data.get("hook") and 3 <= len(scenes) <= 8:
             data["scenes"] = scenes
+            data["total"] = n if as_list else 0
+            if not as_list:
+                for sc in scenes:
+                    sc.pop("num", None)
             return data
         log(f"[{page['key']}] explainer script incomplete, asking again")
     raise RuntimeError("explainer script missing scenes")
+
+
+def use_list(page, card):
+    """Numbered-list Reels for practical topics (tips/myths), plus a share of the rest."""
+    share = float(page["image"].get("list_share", 0.5))
+    if share <= 0:
+        return False
+    return str(card.get("type", "")) in ("tips", "myth") or random.random() < share
 
 
 def find_clips(page, scenes, used_ids):
@@ -169,7 +201,19 @@ def render(page, script, clips, out_path, clip_paths=None):
     th = page["image"]["theme"]
     hook = transform._text_file(work, "hook.txt", str(script["hook"]).upper(), 16)
     on_acc = th.get("on_accent", "#FFFFFF")
-    vf = (f"drawtext=fontfile={transform.FONT}:textfile={hook}:expansion=none:fontsize=82:"
+    counter, t0 = "", 0.0
+    total_n = int(script.get("total") or 0)
+    for sc, d in zip(script["scenes"], shares):
+        try:
+            k = int(sc.get("num") or 0)
+        except (TypeError, ValueError):
+            k = 0
+        if total_n and 0 < k <= total_n:
+            counter += (f"drawtext=fontfile={transform.FONT}:text='{k}/{total_n}':expansion=none:fontsize=96:"
+                        f"fontcolor={_hex(on_acc)}:box=1:boxcolor={_hex(th['accent'])}@0.94:boxborderw=26:"
+                        f"x=70:y=300:enable='between(t,{t0:.2f},{t0 + d:.2f})',")
+        t0 += d
+    vf = (counter + f"drawtext=fontfile={transform.FONT}:textfile={hook}:expansion=none:fontsize=82:"
           f"fontcolor={_hex(on_acc)}:line_spacing=16:box=1:boxcolor={_hex(th['accent'])}@0.94:"
           "boxborderw=30:x=(w-text_w)/2:y=330:enable='lt(t,3.2)',"
           f"subtitles={caps}" + transform._brand(page))
