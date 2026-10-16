@@ -584,6 +584,15 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                 mp4 = Path(f"preview_{page['key']}.mp4")
                 rmsg, rnote = make_reel(page, card, out, mp4, rows)
                 log(f"[{page['key']}] preview reel type: {rnote}; caption: {(rmsg or '')[:200]}")
+                try:
+                    import explainer
+                    sheet_png, small = Path(f"preview_{page['key']}_sheet.png"), Path(f"preview_{page['key']}_small.mp4")
+                    explainer.contact_sheet(mp4, sheet_png, small)
+                    for f, mime in ((sheet_png, "image/png"), (small, "video/mp4")):
+                        upload_render(drive, f, f"{f.stem}_{utcnow():%Y%m%d_%H%M}{f.suffix}",
+                                      render_folder_id(drive), mime=mime)
+                except Exception as exc:
+                    log(f"[{page['key']}] preview QA files failed: {exc}")
                 _, link = upload_render(drive, mp4, f"preview_{page['key']}_reel_{utcnow():%Y%m%d_%H%M}.mp4",
                                         render_folder_id(drive))
                 log(f"[{page['key']}] preview reel: {link}")

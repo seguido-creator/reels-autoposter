@@ -89,8 +89,10 @@ def find_clips(page, scenes, used_ids):
                 "key": key, "q": q[:100], "safesearch": "true", "per_page": 30, "video_type": "film"})
             if not r.ok:
                 continue
+            want = [w.lower() for w in q.split() if len(w) > 3] or [w.lower() for w in q.split()]
             hits = [h for h in r.json().get("hits", []) if f"pv{h['id']}" not in taken
-                    and (h.get("videos") or {}).get("medium", {}).get("url")]
+                    and (h.get("videos") or {}).get("medium", {}).get("url")
+                    and _relevant(h.get("tags", ""), want)]
             if hits:
                 vertical = [h for h in hits if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
                 hit = random.choice((vertical or hits)[:8])
@@ -100,6 +102,18 @@ def find_clips(page, scenes, used_ids):
         taken.add(f"pv{hit['id']}")
         picked.append(hit)
     return picked
+
+
+BLOCK = {"military", "soldier", "soldiers", "army", "war", "weapon", "gun", "police", "blood",
+         "funeral", "protest", "bikini", "lingerie", "alcohol", "beer", "wine", "cigarette", "smoking"}
+
+
+def _relevant(tags, want):
+    """Clip tags must mention at least one search word and nothing off-brand."""
+    tl = {t.strip().lower() for t in str(tags).replace(",", " ").split()}
+    if tl & BLOCK:
+        return False
+    return any(any(w in t or t in w for t in tl if len(t) > 2) for w in want)
 
 
 def _download(url, dest):
@@ -178,4 +192,20 @@ def make(page, card, out_path, used_ids=()):
     message = str(script.get("caption") or card.get("caption") or "").strip()
     if tags:
         message += "\n\n" + " ".join(tags)
+    log(f"[{page['key']}] explainer scenes: " + " | ".join(
+        f"{sc['search']} -> pv{c['id']} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
     return secs, message, [f"pv{c['id']}" for c in clips]
+
+
+def contact_sheet(mp4, out_png, small_mp4=None):
+    """QA helpers for previews: 6-frame strip + a small, light copy of the video."""
+    import subprocess
+    import transform
+    dur, _ = transform.probe(mp4)
+    step = max(dur / 6, 0.5)
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(mp4), "-vf",
+                    f"fps=1/{step:.2f},scale=270:480,tile=6x1", "-frames:v", "1", str(out_png)], check=True)
+    if small_mp4:
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(mp4), "-vf", "scale=540:960",
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-c:a", "aac", "-b:a", "64k",
+                        str(small_mp4)], check=True)
