@@ -77,7 +77,8 @@
           5,
           6
         ],
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_subject": "car"
       }
     },
     {
@@ -140,7 +141,8 @@
           5,
           6
         ],
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_subject": "luxury hotel"
       }
     },
     {
@@ -202,7 +204,8 @@
           5,
           6
         ],
-        "reel_all_slots": true
+        "reel_all_slots": true,
+        "reel_subject": "dog"
       }
     }
   ],
@@ -253,7 +256,8 @@
         ],
         "reel_all_slots": true,
         "reel_mode": "explainer",
-        "reel_fallback_query": "dog cat pet"
+        "reel_fallback_query": "dog cat pet",
+        "reel_subject": "dog"
       },
       "voice": "Puck",
       "voice_style": "warm, playful and upbeat pet lover, clear and friendly"
@@ -304,7 +308,8 @@
         "reel_outro": "You're not alone. Follow Navigating Dementia Together for more gentle tips.",
         "reel_all_slots": true,
         "reel_mode": "explainer",
-        "reel_fallback_query": "elderly hands"
+        "reel_fallback_query": "elderly hands",
+        "reel_subject": "senior"
       },
       "voice": "Aoede",
       "voice_style": "gentle, calm and reassuring, warm and unhurried"
@@ -358,7 +363,8 @@
         "reel_outro": "Follow Pera Decoded para sa mas maraming money tips, kabayan.",
         "reel_all_slots": true,
         "reel_mode": "explainer",
-        "reel_fallback_query": "money coins"
+        "reel_fallback_query": "money coins",
+        "reel_subject": "money"
       },
       "voice": "Charon",
       "voice_style": "friendly kabayan money coach, clear and confident, natural Taglish"
@@ -410,7 +416,8 @@
         ],
         "reel_all_slots": true,
         "reel_mode": "explainer",
-        "reel_fallback_query": "clean home interior"
+        "reel_fallback_query": "clean home interior",
+        "reel_subject": "home"
       },
       "voice": "Kore",
       "voice_style": "bright, practical and friendly, clear and easy to follow"

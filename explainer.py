@@ -41,6 +41,8 @@ Return JSON with exactly these keys:
     "search": 2-4 plain ENGLISH words describing ONE concrete, filmable subject for a real stock
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
+              Every search phrase MUST include this page's main visual subject ({subject}) or a close
+              variant, so the footage clearly fits the page (e.g. "{subject} closeup", "{subject} at night").
 "caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
 
@@ -54,7 +56,8 @@ def write_script(page, card):
     details = " ".join([str(card.get("body") or "")] + [str(b) for b in card.get("bullets") or []]).strip()
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
                            language=page["image"].get("language") or page["language"],
-                           headline=card["headline"], details=details or "-")
+                           headline=card["headline"], details=details or "-",
+                           subject=page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", ""))
     for _ in range(3):
         resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
             response_mime_type="application/json", temperature=0.8))
