@@ -33,6 +33,14 @@ jobs:
       FB_TOKEN_UAE: ${{ secrets.FB_TOKEN_UAE }}
       FB_PAGE_ID_PH: ${{ secrets.FB_PAGE_ID_PH }}
       FB_TOKEN_PH: ${{ secrets.FB_TOKEN_PH }}
+      FB_PAGE_ID_PAWS: ${{ secrets.FB_PAGE_ID_PAWS }}
+      FB_TOKEN_PAWS: ${{ secrets.FB_TOKEN_PAWS }}
+      FB_PAGE_ID_DEM: ${{ secrets.FB_PAGE_ID_DEM }}
+      FB_TOKEN_DEM: ${{ secrets.FB_TOKEN_DEM }}
+      FB_PAGE_ID_FIN: ${{ secrets.FB_PAGE_ID_FIN }}
+      FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
+      FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
+      FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
