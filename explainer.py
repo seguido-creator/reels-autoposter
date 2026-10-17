@@ -67,6 +67,8 @@ def write_script(page, card):
     from google.genai import types
     client = transform._gemini_client()
     details = " ".join([str(card.get("body") or "")] + [str(b) for b in card.get("bullets") or []]).strip()
+    if card.get("_facts"):
+        details += "\nVerified facts (use ONLY these numbers/claims, attribute claims to the company): " + card["_facts"]
     as_list = use_list(page, card)
     n = random.choice([3, 4, 5])
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],

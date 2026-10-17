@@ -122,6 +122,9 @@ def write_card(page, recent, trend=None):
                    f"{trend['angle']}" + (f" (hook idea: {trend['hook']})" if trend.get("hook") else "")
                    + ". Use your own words, a stronger hook and one extra insight people did not "
                    "expect. Never copy anyone's wording. If it would break the rules above, ignore it.")
+        if trend.get("facts"):
+            prompt += ("\nVerified facts for this topic (use ONLY these numbers and claims; say 'Tesla says' "
+                       "or 'the company claims' for anything not independently tested): " + trend["facts"])
     data = None
     for _ in range(3):  # occasionally Gemini returns an empty/odd answer - just ask again
         resp, used = transform.generate(client, prompt, types.GenerateContentConfig(
@@ -560,8 +563,12 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     used_trends = " ".join(r.get("note", "") for r in mine)
     fresh = [t for t in (page.get("_trends") or [])
              if t.get("angle") and f"trend:{t['angle'][:40]}" not in used_trends]
-    trend = random.choice(fresh) if fresh and (preview or random.random() < cfg.get("trend_share", 0.35)) else None
+    hot = [t for t in fresh if t.get("priority")]  # breaking news: used at the next slot, no dice roll
+    trend = hot[0] if hot else (
+        random.choice(fresh) if fresh and (preview or random.random() < cfg.get("trend_share", 0.35)) else None)
     card = write_card(page, recent, trend)
+    if trend and trend.get("facts"):
+        card["_facts"] = trend["facts"]
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
     used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
