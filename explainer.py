@@ -133,8 +133,14 @@ def find_clips(page, scenes, used_ids):
                     and _relevant(h.get("tags", ""), want, must)]
             if hits:
                 vertical = [h for h in hits if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
-                hit = random.choice((vertical or hits)[:8])
-                break
+                pool = (vertical or hits)[:8]
+                random.shuffle(pool)
+                for h in pool[:4]:  # let Gemini look at the thumbnail; skip clips that don't show the subject
+                    if _shows(h, must or want):
+                        hit = h
+                        break
+                if hit:
+                    break
         if not hit:
             raise RuntimeError(f"no stock clip for '{sc['search']}'")
         taken.add(f"pv{hit['id']}")
@@ -157,6 +163,27 @@ def _relevant(tags, want, must=()):
     if must and not any(hit(w) for w in must):
         return False
     return any(hit(w) for w in want)
+
+
+def _shows(hit, subject):
+    """True if the clip's thumbnail clearly shows the subject (checked by Gemini). Errors -> True."""
+    import requests
+    import transform
+    from google.genai import types
+    thumb = (hit.get("videos") or {}).get("medium", {}).get("thumbnail")
+    if not thumb:
+        return True
+    try:
+        img = requests.get(thumb, timeout=20)
+        img.raise_for_status()
+        resp, _ = transform.generate(transform._gemini_client(), [
+            types.Part.from_bytes(data=img.content, mime_type="image/jpeg"),
+            f"Does this image clearly show a {' or '.join(subject)} as a main subject? Answer only YES or NO."],
+            types.GenerateContentConfig(temperature=0))
+        return "YES" in (resp.text or "").upper()
+    except Exception as exc:
+        log(f"thumbnail check skipped ({str(exc)[:80]})")
+        return True
 
 
 def _download(url, dest):
