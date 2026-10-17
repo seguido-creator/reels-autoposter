@@ -120,7 +120,7 @@ def find_clips(page, scenes, used_ids):
     must = [w.lower() for w in str(page["image"].get("reel_subject") or "").split() if len(w) > 2]
     picked, taken = [], set(used_ids)
     for sc in scenes:
-        hit = None
+        hit, backup = None, None
         words = str(sc["search"]).split()
         for q in (" ".join(words), " ".join(words[:2]), fallback):
             r = requests.get("https://pixabay.com/api/videos/", timeout=30, params={
@@ -135,12 +135,14 @@ def find_clips(page, scenes, used_ids):
                 vertical = [h for h in hits if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
                 pool = (vertical or hits)[:8]
                 random.shuffle(pool)
+                backup = backup or pool[0]
                 for h in pool[:4]:  # let Gemini look at the thumbnail; skip clips that don't show the subject
                     if _shows(h, must or want):
                         hit = h
                         break
                 if hit:
                     break
+        hit = hit or backup  # nothing passed the visual check: best tagged clip beats no reel
         if not hit:
             raise RuntimeError(f"no stock clip for '{sc['search']}'")
         taken.add(f"pv{hit['id']}")
@@ -178,7 +180,7 @@ def _shows(hit, subject):
         img.raise_for_status()
         resp, _ = transform.generate(transform._gemini_client(), [
             types.Part.from_bytes(data=img.content, mime_type="image/jpeg"),
-            f"Does this image clearly show a {' or '.join(subject)} as a main subject? Answer only YES or NO."],
+            f"Is a {' or '.join(subject)} clearly visible in this image? Answer only YES or NO."],
             types.GenerateContentConfig(temperature=0))
         return "YES" in (resp.text or "").upper()
     except Exception as exc:
