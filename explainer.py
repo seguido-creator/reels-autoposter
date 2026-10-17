@@ -117,6 +117,7 @@ def find_clips(page, scenes, used_ids):
     if not key:
         raise RuntimeError("no PIXABAY_API_KEY")
     fallback = page["image"].get("reel_fallback_query") or page["brand"]
+    must = [w.lower() for w in str(page["image"].get("reel_subject") or "").split() if len(w) > 2]
     picked, taken = [], set(used_ids)
     for sc in scenes:
         hit = None
@@ -129,7 +130,7 @@ def find_clips(page, scenes, used_ids):
             want = [w.lower() for w in q.split() if len(w) > 3] or [w.lower() for w in q.split()]
             hits = [h for h in r.json().get("hits", []) if f"pv{h['id']}" not in taken
                     and (h.get("videos") or {}).get("medium", {}).get("url")
-                    and _relevant(h.get("tags", ""), want)]
+                    and _relevant(h.get("tags", ""), want, must)]
             if hits:
                 vertical = [h for h in hits if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
                 hit = random.choice((vertical or hits)[:8])
@@ -145,12 +146,17 @@ BLOCK = {"military", "soldier", "soldiers", "army", "war", "weapon", "gun", "pol
          "funeral", "protest", "bikini", "lingerie", "alcohol", "beer", "wine", "cigarette", "smoking"}
 
 
-def _relevant(tags, want):
-    """Clip tags must mention at least one search word and nothing off-brand."""
+def _relevant(tags, want, must=()):
+    """Clip tags must mention the page's subject (e.g. 'car'), at least one search word,
+    and nothing off-brand."""
     tl = {t.strip().lower() for t in str(tags).replace(",", " ").split()}
     if tl & BLOCK:
         return False
-    return any(any(w in t or t in w for t in tl if len(t) > 2) for w in want)
+    hit = lambda w: any(t in (w, w + "s", w + "es") or (len(w) > 3 and len(t) > 3 and (w in t or t in w))
+                        for t in tl)
+    if must and not any(hit(w) for w in must):
+        return False
+    return any(hit(w) for w in want)
 
 
 def _download(url, dest):
