@@ -1,0 +1,90 @@
+name: Posting runner
+
+# GitHub only starts scheduled runs every few hours on this repo, so one run stays awake for
+# ~5.5 hours and checks every 20 minutes. A queued run takes over when it finishes, so slots are
+# covered back to back. The scripts themselves decide what is due and never post a slot twice.
+on:
+  schedule:
+    - cron: "3 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "How long to stay awake (minutes). Default 330."
+        required: false
+        default: "330"
+      dry_run:
+        description: "yes = only show which slots are due, post nothing"
+        type: choice
+        options: ["no", "yes"]
+        default: "no"
+
+concurrency:
+  group: posting-runner
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      LIBRARY_FOLDER_ID: ${{ secrets.LIBRARY_FOLDER_ID }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      TTS_MODEL: ${{ vars.TTS_MODEL }}
+      FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
+      FB_TOKEN_US: ${{ secrets.FB_TOKEN_US }}
+      FB_PAGE_ID_UAE: ${{ secrets.FB_PAGE_ID_UAE }}
+      FB_TOKEN_UAE: ${{ secrets.FB_TOKEN_UAE }}
+      FB_PAGE_ID_PH: ${{ secrets.FB_PAGE_ID_PH }}
+      FB_TOKEN_PH: ${{ secrets.FB_TOKEN_PH }}
+      FB_PAGE_ID_PAWS: ${{ secrets.FB_PAGE_ID_PAWS }}
+      FB_TOKEN_PAWS: ${{ secrets.FB_TOKEN_PAWS }}
+      FB_PAGE_ID_DEM: ${{ secrets.FB_PAGE_ID_DEM }}
+      FB_TOKEN_DEM: ${{ secrets.FB_TOKEN_DEM }}
+      FB_PAGE_ID_FIN: ${{ secrets.FB_PAGE_ID_FIN }}
+      FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
+      FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
+      FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
+      MINUTES: ${{ inputs.minutes || '330' }}
+      DRY_RUN: ${{ inputs.dry_run || 'no' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          pip install -q -r requirements.txt pillow fonttools brotli
+          python fetch_fonts.py
+
+      - name: Post whatever is due, every 20 minutes
+        run: |
+          end=$(( $(date +%s) + MINUTES * 60 ))
+          fails=0
+          while :; do
+            echo "::group::Check at $(date -u +%H:%M) UTC"
+            if [ "$DRY_RUN" = "yes" ]; then
+              python autopost.py --precheck || fails=$((fails+1))
+              python images.py --precheck || fails=$((fails+1))
+            else
+              python autopost.py || { echo "::warning::autopost failed"; fails=$((fails+1)); }
+              python images.py || { echo "::warning::images failed"; fails=$((fails+1)); }
+            fi
+            echo "::endgroup::"
+            now=$(date +%s)
+            [ $(( now + 20 * 60 )) -ge $end ] && break
+            sleep 1200
+          done
+          echo "Runner finished with $fails failed step(s)"
+          [ $fails -eq 0 ]

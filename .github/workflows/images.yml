@@ -1,8 +1,7 @@
 name: Image posts
 
 on:
-  schedule:
-    - cron: "22,52 * * * *"   # twice an hour (GitHub often skips runs); the script decides which page is due
+  # Scheduled posting now runs from runner.yml (keeps checking every 20 min); this stays for manual runs.
   workflow_dispatch:
     inputs:
       page:
