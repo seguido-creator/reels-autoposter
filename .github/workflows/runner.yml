@@ -74,6 +74,7 @@ jobs:
           fails=0
           while :; do
             echo "::group::Check at $(date -u +%H:%M) UTC"
+            git pull -q --ff-only || echo "::warning::could not update code, using current copy"
             if [ "$DRY_RUN" = "yes" ]; then
               python autopost.py --precheck || fails=$((fails+1))
               python images.py --precheck || fails=$((fails+1))
