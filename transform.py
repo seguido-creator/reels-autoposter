@@ -346,6 +346,17 @@ def _brand(page):
             "fontcolor=white@0.85:x=(w-text_w)/2:y=h-150:shadowcolor=black@0.6:shadowx=2:shadowy=2")
 
 
+def _follow(page, work, end_t, secs=2.6):
+    """'Follow <Page>' card over the last seconds of a reel (text from follow_cta in config.json)."""
+    text = str(page.get("follow_cta") or f"Follow {page.get('brand', '').strip()} for more").strip()
+    if not text or end_t < 5:
+        return ""
+    f = _text_file(work, "follow.txt", _esc(text), 20)
+    return (f",drawtext=fontfile={FONT}:textfile={f}:expansion=none:fontsize=64:fontcolor=white:"
+            "line_spacing=14:box=1:boxcolor=0x1877F2@0.95:boxborderw=30:"
+            f"x=(w-text_w)/2:y=(h-text_h)/2-260:enable='gte(t,{max(0.0, end_t - secs):.2f})'")
+
+
 def _esc(s):
     return s.replace("\\", "").replace("'", "").replace(":", " ").replace("%", "")
 
@@ -381,21 +392,17 @@ def render(src, script, page, work, out_path):
     if duration > room and ke > room:  # make sure the key moment stays in
         clip_start = min(duration - room, max(0.0, ke + 1 - room))
 
-    # --- segment 1: hook intro on a blurred still of the key moment
-    still = work / "still.png"
-    _run(["ffmpeg", "-y", "-v", "error", "-ss", f"{(ks + ke) / 2:.2f}", "-i", str(src),
-          "-frames:v", "1", str(still)])
+    # --- segment 1: hook over the MOVING key moment (a still frame lost most viewers in the first 3-5 s)
     hook = _text_file(work, "hook.txt", script["hook"].upper(), 16)
     seg1 = work / "s1.mp4"
-    vf1 = (f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=30:3,"
-           f"eq=brightness=-0.25,setsar=1,fps={FPS},"
+    vf1 = (f"[0:v]{FILL},eq=brightness=-0.12,"
            f"drawtext=fontfile={FONT}:textfile={hook}:expansion=none:fontsize=84:"
            "fontcolor=white:line_spacing=18:box=1:boxcolor=0xE63946@0.92:boxborderw=34:"
-           "x=(w-text_w)/2:y=(h-text_h)/2-120" + _brand(page))
-    _run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-i", str(still), "-i", str(intro_wav),
-          "-t", f"{intro_len:.2f}", "-vf", vf1,
-          "-af", "aresample=48000,pan=stereo|c0=c0|c1=c0,apad",
-          *VCODEC, *ACODEC, "-shortest", str(seg1)])
+           "x=(w-text_w)/2:y=(h-text_h)/2-120" + _brand(page) + "[v1];"
+           "[1:a]aresample=48000,pan=stereo|c0=c0|c1=c0,apad[a1]")
+    _run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", "-ss", f"{ks:.2f}", "-i", str(src),
+          "-i", str(intro_wav), "-t", f"{intro_len:.2f}", "-filter_complex", vf1,
+          "-map", "[v1]", "-map", "[a1]", *VCODEC, *ACODEC, str(seg1)])
 
     # --- segment 2: the clip, framed
     seg2 = work / "s2.mp4"
@@ -423,7 +430,7 @@ def render(src, script, page, work, out_path):
     vf3 = (f"[0:v]{FILL},eq=brightness=-0.08,"
            f"drawtext=fontfile={FONT}:textfile={title}:expansion=none:fontsize=60:"
            "fontcolor=black:box=1:boxcolor=0xFFD60A@0.95:boxborderw=22:x=(w-text_w)/2:y=200,"
-           f"subtitles={caps}{_brand(page)}[v]")
+           f"subtitles={caps}{_brand(page)}{_follow(page, work, insight_len)}[v]")
     if has_audio:
         af3 = ("[0:a]aresample=48000,volume=0.12[bg];"
                "[1:a]aresample=48000,pan=stereo|c0=c0|c1=c0,volume=1.15[vo];"
