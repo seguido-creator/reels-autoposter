@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       minutes:
-        description: "How long to stay awake (minutes). Default 330."
+        description: "How long to stay awake (minutes). Default 300."
         required: false
-        default: "330"
+        default: "300"
       dry_run:
         description: "yes = only show which slots are due, post nothing"
         type: choice
@@ -52,10 +52,15 @@ jobs:
       FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
       FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
       FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
-      MINUTES: ${{ inputs.minutes || '330' }}
+      RENDER_ENGINE: remotion
+      MINUTES: ${{ inputs.minutes || '300' }}
       DRY_RUN: ${{ inputs.dry_run || 'no' }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - uses: actions/setup-python@v5
         with:
@@ -67,6 +72,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
           pip install -q -r requirements.txt pillow fonttools brotli
           python fetch_fonts.py
+          cd remotion && npm install --no-audit --no-fund --loglevel=error && npx remotion browser ensure
 
       - name: Post whatever is due, every 20 minutes
         run: |

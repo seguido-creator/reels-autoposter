@@ -21,7 +21,7 @@ concurrency:
 jobs:
   images:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -46,10 +46,15 @@ jobs:
       FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
       FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
       FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
+      RENDER_ENGINE: remotion
       PAGE: ${{ inputs.page || '' }}
       MODE: ${{ inputs.mode || 'post' }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
       - uses: actions/setup-python@v5
         with:
@@ -67,6 +72,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
           pip install -q -r requirements.txt pillow fonttools brotli
           python fetch_fonts.py
+          cd remotion && npm install --no-audit --no-fund --loglevel=error && npx remotion browser ensure
 
       - name: Make image posts
         if: ${{ steps.check.outputs.due == 'true' || env.PAGE != '' }}
