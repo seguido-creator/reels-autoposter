@@ -1,5 +1,6 @@
 {
   "graph_api_version": "v25.0",
+  "photo_posts": false,
   "gemini_model_default": "gemini-3.8-flash",
   "tts_model_default": "gemini-3.8-flash-tts",
   "gemini_fallback_models": [
@@ -31,6 +32,7 @@
         "21:30"
       ],
       "brand": "Throttle Decoded",
+      "follow_cta": "Follow Throttle Decoded for daily car facts",
       "voice": "Charon",
       "voice_style": "confident, energetic car-guy storyteller, clear and punchy",
       "audience": "Viewers in the United States, mostly 18-45, scrolling Facebook Reels for quick entertainment.",
@@ -93,6 +95,7 @@
         "21:30"
       ],
       "brand": "Stay Decoded",
+      "follow_cta": "Follow Stay Decoded for more travel secrets",
       "voice": "Kore",
       "voice_style": "warm, clear and confident, easy to understand",
       "audience": "Residents of the UAE, a very diverse expat-heavy audience (South Asian, Filipino, Arab, Western). Keep it respectful of local culture: no alcohol, no religious jokes, nothing political or suggestive.",
@@ -157,6 +160,7 @@
         "21:30"
       ],
       "brand": "Alaga Explained",
+      "follow_cta": "I-follow ang Alaga Explained para sa daily pet tips",
       "voice": "Aoede",
       "voice_style": "masaya, friendly and natural, like a Filipino vlogger talking to barkada",
       "audience": "Filipino viewers in the Philippines, all ages, who love relatable, funny and heartwarming content.",
@@ -216,11 +220,14 @@
       "token_env": "FB_TOKEN_PAWS",
       "timezone": "America/New_York",
       "brand": "Pawside Giggles",
+      "follow_cta": "Follow Pawside Giggles for more pet facts",
       "audience": "Pet lovers in the US, UK, Canada and Australia, all ages, who enjoy funny and heartwarming dog and cat content.",
       "language": "Warm, playful, simple American English.",
       "image": {
         "slots": [
+          "09:30",
           "13:00",
+          "17:00",
           "20:00"
         ],
         "footer": "Funny pets, real pet facts.",
@@ -268,11 +275,14 @@
       "token_env": "FB_TOKEN_DEM",
       "timezone": "America/New_York",
       "brand": "Navigating Dementia Together",
+      "follow_cta": "Follow for more gentle caregiving tips",
       "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
       "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
       "image": {
         "slots": [
+          "09:00",
           "12:30",
+          "16:30",
           "20:00"
         ],
         "footer": "Practical help & encouragement for caregivers.",
@@ -320,11 +330,14 @@
       "token_env": "FB_TOKEN_FIN",
       "timezone": "Asia/Manila",
       "brand": "Pera Decoded",
+      "follow_cta": "Follow Pera Decoded para sa money tips, kabayan",
       "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
       "language": "Simple English with a light, natural Taglish touch. Friendly 'kabayan' tone.",
       "image": {
         "slots": [
+          "07:30",
           "12:30",
+          "18:00",
           "21:00"
         ],
         "footer": "Money smarts for Filipinos & OFWs.",
@@ -375,10 +388,13 @@
       "token_env": "FB_TOKEN_HOME",
       "timezone": "Asia/Dubai",
       "brand": "Home Hacks Decoded",
+      "follow_cta": "Follow Home Hacks Decoded for more home hacks",
       "audience": "Renters and homeowners in the UAE and worldwide (lots of expats in apartments) who like simple cleaning, organising, small-space and moving hacks.",
       "language": "Simple, clear international English.",
       "image": {
         "slots": [
+          "08:30",
+          "13:30",
           "18:30",
           "21:00"
         ],
