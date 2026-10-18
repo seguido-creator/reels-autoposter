@@ -174,9 +174,13 @@ def stock_photo(page, card, used_ids):
             return None, None, None
         if photos:
             p = random.choice(photos[:12])
-            raw = requests.get(p["src"].get("large2x") or p["src"]["original"], timeout=60).content
-            credit = f"Photo: {p.get('photographer', 'Pexels')} / Pexels"
-            return Image.open(io.BytesIO(raw)).convert("RGB"), credit, str(p["id"])
+            try:
+                raw = requests.get(p["src"].get("large2x") or p["src"]["original"], timeout=60).content
+                img = Image.open(io.BytesIO(raw)).convert("RGB")
+            except Exception as exc:
+                log(f"[{page['key']}] Pexels image unusable: {str(exc)[:80]}")
+                break
+            return img, f"Photo: {p.get('photographer', 'Pexels')} / Pexels", str(p["id"])
     return pixabay_photo(page, query, used_ids)
 
 
@@ -200,11 +204,15 @@ def pixabay_photo(page, query, used_ids):
         except Exception as exc:
             log(f"[{page['key']}] Pixabay search failed: {str(exc)[:120]}")
             return None, None, None
-        if hits:
-            h = random.choice(hits[:15])
-            raw = requests.get(h["largeImageURL"], timeout=60).content
-            credit = f"Image: {h.get('user', 'Pixabay')} / Pixabay"
-            return Image.open(io.BytesIO(raw)).convert("RGB"), credit, f"px{h['id']}"
+        random.shuffle(hits)
+        for h in hits[:4]:  # a download can come back as a non-image (rate limit/HTML): try the next one
+            try:
+                raw = requests.get(h["largeImageURL"], timeout=60).content
+                img = Image.open(io.BytesIO(raw)).convert("RGB")
+            except Exception as exc:
+                log(f"[{page['key']}] Pixabay image px{h['id']} unusable: {str(exc)[:80]}")
+                continue
+            return img, f"Image: {h.get('user', 'Pixabay')} / Pixabay", f"px{h['id']}"
     return None, None, None
 
 
