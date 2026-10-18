@@ -253,7 +253,7 @@ def render(page, script, clips, out_path, clip_paths=None):
     vf = (counter + f"drawtext=fontfile={transform.FONT}:textfile={hook}:expansion=none:fontsize=82:"
           f"fontcolor={_hex(on_acc)}:line_spacing=16:box=1:boxcolor={_hex(th['accent'])}@0.94:"
           "boxborderw=30:x=(w-text_w)/2:y=330:enable='lt(t,3.2)',"
-          f"subtitles={caps}" + transform._brand(page))
+          f"subtitles={caps}" + transform._brand(page) + transform._follow(page, work, total))
     transform._run(["ffmpeg", "-y", "-v", "error", "-i", str(joined), "-i", str(wav),
                     "-filter_complex",
                     f"[0:v]{vf}[v];[1:a]adelay={int(lead * 1000)}|{int(lead * 1000)},"
