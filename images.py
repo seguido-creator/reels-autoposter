@@ -475,6 +475,10 @@ def log_sheet(sheet):
 
 
 # ---------------------------------------------------------------- photo reels
+def photo_posts_on(cfg, page):
+    """Photo cards on/off: "photo_posts" in config.json (top level), overridable in a page's image block."""
+    return bool(page["image"].get("photo_posts", cfg.get("photo_posts", True)))
+
 def reel_due(page, label):
     """Photo pages also post a short Reel (Meta's monetization waitlist needs 3+ Reels / 90 days):
     on the page's reel_days (0=Mon .. 6=Sun, local time), from the LAST image slot of that day."""
@@ -606,22 +610,37 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
         return
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
     try:
-        post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
-        note = f"text {card['model']}; photo {card['photo']}"
-        if trend:
-            note += f"; trend:{trend['angle'][:40]}"
-        log(f"[{page['key']}] {label}: posted image '{card['headline']}' ({post_id})")
-        if reel_due(page, label):
+        post_id, note = "", ""
+        if not photo_posts_on(cfg, page):
+            # Reels-only mode: the slot's post is the explainer Reel; the photo card is only a fallback
             try:
                 from autopost import publish_reel
                 mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
                 rmsg, rnote = make_reel(page, card, out, mp4, rows)
                 vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
-                note += f"; reel {vid} {state} ({rnote})"
-                log(f"[{page['key']}] {label}: posted photo reel {vid} ({state})")
+                post_id = vid
+                note = f"text {card['model']}; reel-only {state} ({rnote})"
+                log(f"[{page['key']}] {label}: posted reel {vid} ({state}) '{card['headline']}'")
             except Exception as rexc:
-                note += f"; reel FAILED {str(rexc)[:150]}"
-                log(f"[{page['key']}] photo reel failed: {rexc}")
+                note = f"reel-only FAILED {str(rexc)[:150]}; "
+                log(f"[{page['key']}] reel-only post failed, posting the photo card instead: {rexc}")
+        if not post_id:
+            post_id = post_photo(page_id, token, out, message, cfg["graph_api_version"])
+            note += f"text {card['model']}; photo {card['photo']}"
+            log(f"[{page['key']}] {label}: posted image '{card['headline']}' ({post_id})")
+            if photo_posts_on(cfg, page) and reel_due(page, label):
+                try:
+                    from autopost import publish_reel
+                    mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
+                    rmsg, rnote = make_reel(page, card, out, mp4, rows)
+                    vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
+                    note += f"; reel {vid} {state} ({rnote})"
+                    log(f"[{page['key']}] {label}: posted photo reel {vid} ({state})")
+                except Exception as rexc:
+                    note += f"; reel FAILED {str(rexc)[:150]}"
+                    log(f"[{page['key']}] photo reel failed: {rexc}")
+        if trend:
+            note += f"; trend:{trend['angle'][:40]}"
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
         log(f"[{page['key']}] {label}: image post FAILED: {exc}")
