@@ -581,6 +581,11 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     card = write_card(page, recent, trend)
     if trend and trend.get("facts"):
         card["_facts"] = trend["facts"]
+    series = (cfg.get("series") or {}).get(page["key"])
+    if series and card.get("type") in series.get("types", []):
+        n = 1 + sum(1 for r in mine if "series:" in str(r.get("note", "")) and "failed" not in str(r.get("slot", "")))
+        card["_series"] = f"{series['name']} #{n}"
+        card["caption"] = f"{card['_series']}: " + card["caption"].strip()
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
     used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
@@ -625,6 +630,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                 from autopost import publish_reel
                 mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
                 rmsg, rnote = make_reel(page, card, out, mp4, rows)
+                if rmsg and card.get("_series") and not rmsg.startswith(card["_series"]):
+                    rmsg = f"{card['_series']}: {rmsg}"
                 vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
                 post_id = vid
                 note = f"text {card['model']}; reel-only {state} ({rnote})"
@@ -649,6 +656,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                     log(f"[{page['key']}] photo reel failed: {rexc}")
         if trend:
             note += f"; trend:{trend['angle'][:40]}"
+        if card.get("_series"):
+            note += f"; series:{card['_series']}"
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
         log(f"[{page['key']}] {label}: image post FAILED: {exc}")

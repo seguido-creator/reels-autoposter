@@ -447,5 +447,81 @@
     "US": "PAWS",
     "PAWS": "US",
     "DEM": "PAWS"
+  },
+  "community": {
+    "enabled": true,
+    "window_hours": 4,
+    "reveal_hours": 7,
+    "slots": {
+      "US": "10:30",
+      "UAE": "10:30",
+      "PH": "10:00",
+      "PAWS": "09:30",
+      "DEM": "14:00",
+      "FIN": "10:00",
+      "HOME": "11:00"
+    },
+    "kinds": [
+      "teaser",
+      "opinion",
+      "guess",
+      "story",
+      "teaser",
+      "guess",
+      "opinion"
+    ],
+    "trust_pages": [
+      "FIN",
+      "UAE"
+    ],
+    "trust_days": [
+      1,
+      15
+    ]
+  },
+  "series": {
+    "US": {
+      "name": "Car Myth",
+      "types": [
+        "myth"
+      ]
+    },
+    "UAE": {
+      "name": "Stay Smart",
+      "types": [
+        "tips"
+      ]
+    },
+    "PH": {
+      "name": "Alaga Tip",
+      "types": [
+        "tips"
+      ]
+    },
+    "PAWS": {
+      "name": "Pet Myth",
+      "types": [
+        "myth"
+      ]
+    },
+    "DEM": {
+      "name": "Caregiver Tip",
+      "types": [
+        "tips"
+      ]
+    },
+    "FIN": {
+      "name": "Money Class",
+      "types": [
+        "tips",
+        "myth"
+      ]
+    },
+    "HOME": {
+      "name": "Home Hack",
+      "types": [
+        "tips"
+      ]
+    }
   }
 }
