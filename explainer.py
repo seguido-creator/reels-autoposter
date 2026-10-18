@@ -46,6 +46,7 @@ Return JSON with exactly these keys:
 "hook": on-screen opening title, max 6 words, no emojis,
 "scenes": {scene_count} objects in order, each with
     "vo": the part of the script spoken during this scene (1-2 short sentences),
+    "key": the single most important word of this scene, copied exactly as it appears in "vo" (shown big on screen),
     {num_field}"search": 2-4 plain ENGLISH words describing ONE concrete, filmable subject for a real stock
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
@@ -208,7 +209,8 @@ def render(page, script, clips, out_path, clip_paths=None):
     full = " ".join(str(s["vo"]).strip() for s in script["scenes"])
     wav = work / "vo.wav"
     vo_len = transform.speak(full, page, wav)
-    lead, tail = 0.3, 0.9
+    engine = page["image"].get("render_engine") or os.environ.get("RENDER_ENGINE", "ffmpeg")
+    lead, tail = 0.3, (1.9 if engine == "remotion" else 0.9)
     total = lead + vo_len + tail
     words = [max(len(str(s["vo"]).split()), 1) for s in script["scenes"]]
     shares = [w / sum(words) * vo_len for w in words]
@@ -232,6 +234,14 @@ def render(page, script, clips, out_path, clip_paths=None):
     joined = work / "joined.mp4"
     transform._run(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lst),
                     "-c", "copy", str(joined)])
+
+    if engine == "remotion":
+        try:
+            render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_path, work)
+            log(f"[{page['key']}] explainer reel {total:.1f}s, {len(segs)} scenes (remotion)")
+            return total
+        except Exception as exc:
+            log(f"[{page['key']}] remotion render failed, using ffmpeg overlay: {str(exc)[-300:]}")
 
     caps = work / "caps.ass"
     transform.write_captions(full, lead, vo_len, caps)
@@ -262,6 +272,67 @@ def render(page, script, clips, out_path, clip_paths=None):
                     *transform.VCODEC, *transform.ACODEC, "-movflags", "+faststart", str(out_path)])
     log(f"[{page['key']}] explainer reel {total:.1f}s, {len(segs)} scenes")
     return total
+
+
+REMOTION_DIR = Path(__file__).resolve().parent / "remotion"
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+
+
+def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_path, work):
+    """Animated overlays (hook, counters, keyword pops, karaoke captions, outro) via Remotion."""
+    import shutil
+    import subprocess
+    th = page["image"]["theme"]
+    pub = work / "public"
+    pub.mkdir(exist_ok=True)
+    shutil.copy(joined, pub / "joined.mp4")
+    shutil.copy(wav, pub / "vo.wav")
+    for src, dst in ((th.get("title_font", "Anton.ttf"), "title.ttf"), (th.get("body_font", "Poppins-Bold.ttf"), "body.ttf")):
+        f = FONT_DIR / src
+        shutil.copy(f if f.exists() else FONT_DIR / "Poppins-Bold.ttf", pub / dst)
+    scenes, t0 = [], 0.0
+    for sc, d in zip(script["scenes"], shares):
+        try:
+            num = int(sc.get("num") or 0)
+        except (TypeError, ValueError):
+            num = 0
+        key = str(sc.get("key") or "").strip()
+        if key and key.lower() not in str(sc["vo"]).lower():
+            key = ""
+        scenes.append({"start": round(t0, 3), "end": round(t0 + d, 3), "num": num, "key": key})
+        t0 += d
+    # spoken words spread over the voice-over only (lead .. lead+vo_len), weighted per scene
+    words, spoken_t = [], lead
+    scene_words = [str(sc["vo"]).split() for sc in script["scenes"]]
+    allw = [w for ws in scene_words for w in ws]
+    weights = [len(w) + 2 for w in allw] or [1]
+    tot = sum(weights)
+    for w, wt in zip(allw, weights):
+        words.append({"w": w, "t": round(spoken_t, 3)})
+        spoken_t += vo_len * wt / tot
+    brand = page["brand"]
+    mono = th.get("monogram") or page["image"].get("monogram") or "".join(x[0] for x in brand.split()[:2]).upper()
+    props = {
+        "total": round(total, 3), "lead": lead, "video": "joined.mp4", "audio": "vo.wav",
+        "hook": str(script["hook"]), "brand": brand, "monogram": mono,
+        "outro": str(page.get("follow_cta") or page["image"].get("footer") or "Follow for more"), "totalN": int(script.get("total") or 0),
+        "scenes": scenes, "words": words,
+        "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
+                  "bgTop": th.get("bg_top", "#111111"), "bgBottom": th.get("bg_bottom", "#000000"),
+                  "text": th.get("text", "#FFFFFF"), "titleFont": "title.ttf", "bodyFont": "body.ttf",
+                  "upper": bool(th.get("upper_headline", True))},
+    }
+    pj = work / "props.json"
+    pj.write_text(json.dumps(props, ensure_ascii=False), encoding="utf-8")
+    cmd = ["npx", "remotion", "render", "src/index.ts", "Reel", str(Path(out_path).resolve()),
+           f"--props={pj}", f"--public-dir={pub}", "--codec=h264", "--crf=20",
+           f"--concurrency={max(1, os.cpu_count() or 2)}", "--log=error"]
+    if os.environ.get("REMOTION_BROWSER"):
+        cmd.append(f"--browser-executable={os.environ['REMOTION_BROWSER']}")
+    r = subprocess.run(cmd, cwd=REMOTION_DIR, capture_output=True, text=True,
+                       timeout=int(os.environ.get("REMOTION_TIMEOUT", "2400")))
+    if r.returncode != 0 or not Path(out_path).exists():
+        raise RuntimeError((r.stderr or r.stdout or "no output")[-600:])
 
 
 def make(page, card, out_path, used_ids=()):

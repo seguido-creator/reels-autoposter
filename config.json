@@ -225,10 +225,10 @@
       "language": "Warm, playful, simple American English.",
       "image": {
         "slots": [
-          "09:30",
+          "11:00",
           "13:00",
-          "17:00",
-          "20:00"
+          "18:00",
+          "20:30"
         ],
         "footer": "Funny pets, real pet facts.",
         "angle": "DOGS AND CATS: surprising but true pet behavior facts, funny-but-true 'pet logic', practical and safe care tips. Only well-established veterinary/behavior facts; if health is involved, say to ask a vet.",
@@ -281,9 +281,9 @@
       "image": {
         "slots": [
           "09:00",
-          "12:30",
+          "11:30",
           "16:30",
-          "20:00"
+          "21:00"
         ],
         "footer": "Practical help & encouragement for caregivers.",
         "angle": "DEMENTIA CAREGIVING: practical, widely recommended caregiving strategies (communication, routines, home safety, sundowning, mealtimes, caregiver self-care), gentle encouragement for caregivers, and common myths vs facts. Follow mainstream guidance from organisations like the Alzheimer's Association, Alzheimer's Society and NHS. Never suggest medications, supplements, cures or diagnoses; for symptoms or changes, say to talk to their doctor.",
@@ -338,7 +338,7 @@
           "07:30",
           "12:30",
           "18:00",
-          "21:00"
+          "22:00"
         ],
         "footer": "Money smarts for Filipinos & OFWs.",
         "angle": "PERSONAL FINANCE FOR FILIPINOS & OFWs: budgeting, emergency funds, saving habits, avoiding debt traps and scams, how common investments work in general (e.g. what an index fund, Pag-IBIG MP2 or a time deposit is). General education only: never recommend a specific stock, coin, company or product, never promise returns, never quote current rates or prices.",
@@ -393,10 +393,10 @@
       "language": "Simple, clear international English.",
       "image": {
         "slots": [
-          "08:30",
+          "09:00",
           "13:30",
           "18:30",
-          "21:00"
+          "21:30"
         ],
         "footer": "Cleaning, organising & moving hacks.",
         "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home cool and fresh in hot climates. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
