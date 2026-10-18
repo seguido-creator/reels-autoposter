@@ -1,0 +1,11 @@
+{
+  "name": "reels-remotion",
+  "private": true,
+  "description": "Animated overlays for explainer Reels (rendered by explainer.py)",
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.536"
+  }
+}
