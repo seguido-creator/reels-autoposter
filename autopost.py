@@ -159,6 +159,8 @@ def process_page(page, cfg, drive, sheet, now, force=False):
             video_id, state = publish_reel(page_id, token, path, row["caption"],
                                            cfg["graph_api_version"])
             delete_render(drive, row["render_id"])
+             import engage
+             state += engage.after_post(page, cfg, video_id, token, row["caption"])
             update_row(ws, r, {"status": "POSTED", "slot": label,
                                "posted_at_utc": utcnow().isoformat(timespec="seconds"),
                                "fb_video_id": video_id, "render_id": "", "preview": "",
