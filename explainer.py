@@ -73,7 +73,11 @@ def write_script(page, card):
     client = transform._gemini_client()
     details = " ".join([str(card.get("body") or "")] + [str(b) for b in card.get("bullets") or []]).strip()
     if card.get("_facts"):
-        details += "\nVerified facts (use ONLY these numbers/claims, attribute claims to the company): " + card["_facts"]
+        details += ("\nVerified facts (use ONLY these numbers/claims; attribute claims that are not settled fact, "
+                    "e.g. a company's own figures, to their source): " + card["_facts"])
+    if card.get("_issues"):
+        details += ("\nA fact-checker rejected the previous draft for these reasons - fix every one: "
+                    + "; ".join(map(str, card["_issues"])))
     as_list = use_list(page, card)
     n = random.choice([3, 4, 5])
     subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
@@ -348,6 +352,14 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
 def make(page, card, out_path, used_ids=()):
     """Script -> clips -> video. Returns (seconds, caption_message, [clip ids])."""
     script = write_script(page, card)
+    if page["image"].get("fact_check"):
+        import factcheck
+        res = factcheck.check_script(page, script, card)
+        if res is not True:
+            script = write_script(page, dict(card, _issues=res))
+            res = factcheck.check_script(page, script, card)
+            if res is not True:
+                raise RuntimeError("script failed fact-check twice: " + "; ".join(map(str, res))[:300])
     clips = find_clips(page, script["scenes"], used_ids)
     secs = render(page, script, clips, out_path)
     tags = script.get("hashtags") or []

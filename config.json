@@ -483,7 +483,8 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
-        "reel_subject": ""
+        "reel_subject": "",
+        "fact_check": true
       },
       "voice": "Charon",
       "voice_style": "calm, warm, intriguing documentary storyteller, clear and unhurried"

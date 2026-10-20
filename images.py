@@ -589,6 +589,9 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
         n = 1 + sum(1 for r in mine if "series:" in str(r.get("note", "")) and "failed" not in str(r.get("slot", "")))
         card["_series"] = f"{series['name']} #{n}"
         card["caption"] = f"{card['_series']}: " + card["caption"].strip()
+    if page["image"].get("fact_check"):
+        import factcheck
+        card["_fc"] = factcheck.check_card(page, card)  # raises (no post) when the core claim is false
     out = Path(f"preview_{page['key']}.png") if preview else Path(f"/tmp/card_{page['key']}.png")
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
     used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
@@ -661,6 +664,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             note += f"; trend:{trend['angle'][:40]}"
         if card.get("_series"):
             note += f"; series:{card['_series']}"
+        if card.get("_fc"):
+            note += f"; {card['_fc']}"
     except Exception as exc:
         post_id, note = "", str(exc)[:400]
         log(f"[{page['key']}] {label}: image post FAILED: {exc}")
