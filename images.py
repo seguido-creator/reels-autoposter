@@ -219,6 +219,28 @@ def pixabay_photo(page, query, used_ids):
     return None, None, None
 
 
+def photo_fits(page, card, img):
+    """Gemini looks at the stock photo: a real photograph that suits the card's topic? Errors -> True."""
+    import io
+    try:
+        import transform
+        from google.genai import types
+        buf = io.BytesIO()
+        small = img.copy()
+        small.thumbnail((640, 640))
+        small.save(buf, "JPEG", quality=85)
+        resp, _ = transform.generate(transform._gemini_client(), [
+            types.Part.from_bytes(data=buf.getvalue(), mime_type="image/jpeg"),
+            f"A Facebook info card for the page '{page['brand']}' is titled: \"{card.get('headline', '')}\". "
+            "Is this image a real photograph (not a cartoon, clip art or illustration) that clearly fits that "
+            "topic, place, object or era? Answer only YES or NO."],
+            types.GenerateContentConfig(temperature=0))
+        return "YES" in (resp.text or "").upper()
+    except Exception as exc:
+        log(f"[{page['key']}] photo check skipped ({str(exc)[:80]})")
+        return True
+
+
 def generate_photo(page, card, cfg):
     """Paid Gemini image model -> PIL image (4:5). Uses its own key (GEMINI_IMAGE_API_KEY) so the
     free text/voice key stays on the free tier. Returns (image, model) or (None, reason)."""
@@ -596,6 +618,15 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     # photo source order: free real stock photo -> paid AI photo (if a key is set) -> text design
     used = {m for r in mine for m in re.findall(r"pexels:(px\d+|\d+)", r.get("note", ""))}
     photo, credit, pid = stock_photo(page, card, used)
+    for _ in range(2):  # a stock hit can be off-topic or a cartoon: let Gemini look, try another once
+        if photo is None or photo_fits(page, card, photo):
+            break
+        log(f"[{page['key']}] stock photo {pid} does not fit the card, trying another")
+        used.add(str(pid))
+        photo, credit, pid = stock_photo(page, card, used)
+    else:
+        if photo is not None and not photo_fits(page, card, photo):
+            photo = None
     if photo is not None:
         card["photo"], card["credit"] = f"pexels:{pid}", credit
     else:
