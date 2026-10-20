@@ -117,6 +117,9 @@ def write_card(page, recent, trend=None):
         audience=page["audience"], language=style.get("language") or page["language"],
         types=", ".join(style.get("types", ["fact", "tips", "myth", "question"])),
         recent="\n".join(f"- {t}" for t in recent[-40:]) or "- (none yet)")
+    if style.get("extra_rules"):
+        prompt += ("\n\nPage-specific rules (they override the general rules above where they conflict):\n"
+                   + style["extra_rules"])
     if trend:
         prompt += ("\n\nBuild THIS card on a topic that is trending in the niche this week: "
                    f"{trend['angle']}" + (f" (hook idea: {trend['hook']})" if trend.get("hook") else "")

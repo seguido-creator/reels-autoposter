@@ -437,6 +437,56 @@
       },
       "voice": "Kore",
       "voice_style": "bright, practical and friendly, clear and easy to follow"
+    },
+    {
+      "key": "HIST",
+      "page_id_env": "FB_PAGE_ID_HIST",
+      "token_env": "FB_TOKEN_HIST",
+      "timezone": "America/New_York",
+      "brand": "History Decoded",
+      "follow_cta": "Follow History Decoded for more history",
+      "audience": "History lovers in the US, UK, Canada and Australia, adults of all ages, curious about how world events connect across time.",
+      "language": "Clear, vivid, conversational American English, like a great storyteller.",
+      "image": {
+        "slots": [],
+        "footer": "What the world looked like, side by side.",
+        "angle": "WORLD HISTORY IN PARALLEL: 'meanwhile' timelines (what was happening in different parts of the world at the same moment), surprising 'older than you think' comparisons (e.g. Oxford University is older than the Aztec Empire), 'same year' facts, how famous empires, inventions and landmarks overlap in time, and 'the year you were born' nostalgia for a US audience (1950s to 2000s). Every fact must carry its year or century and be well documented in standard encyclopedias.",
+        "types": [
+          "fact",
+          "myth",
+          "question"
+        ],
+        "extra_rules": "This page covers world history, including religious history such as the Bible era. Treat religious figures and events respectfully and factually as history: attribute them to sources ('according to the Gospels', 'historians date this to...'), never preach, argue, rank or mock any belief. No modern party politics, no glorifying war, no graphic violence. Ancient dates are often estimates: say 'around' or 'about' and never give false precision. Only use facts you are highly confident appear in standard encyclopedias; if unsure of a date or detail, leave it out. Never invent quotes. The 'open on a real-life problem' rule does not apply here: open with the most surprising true time comparison instead. A professional-advice caveat is not needed.",
+        "style_block": "Tell it like a great history teacher with a twist:\n- Open with a jaw-dropping but TRUE time comparison or 'meanwhile' fact the viewer did not expect.\n- Anchor every event with its year or century so viewers can place it on a mental timeline.\n- Connect the events: say what links them or why the overlap is surprising.\n- Close with a one-line takeaway that makes history feel close, then a genuine question.\n- Sound curious and warm, never like a textbook, no hype.",
+        "theme": {
+          "bg_top": "#2A2118",
+          "bg_bottom": "#120E0A",
+          "accent": "#D9822B",
+          "text": "#F4EAD5",
+          "muted": "#D6C7A8",
+          "on_accent": "#1A140E",
+          "motif": "circles",
+          "title_font": "Playfair-Bold.ttf",
+          "body_font": "Poppins-Medium.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "line_height": 1.15
+        },
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "ancient ruins",
+        "reel_subject": ""
+      },
+      "voice": "Charon",
+      "voice_style": "calm, warm, intriguing documentary storyteller, clear and unhurried"
     }
   ],
   "cross_share": {
@@ -520,6 +570,12 @@
       "name": "Home Hack",
       "types": [
         "tips"
+      ]
+    },
+    "HIST": {
+      "name": "Older Than You Think",
+      "types": [
+        "fact"
       ]
     }
   }

@@ -26,13 +26,7 @@ Today's topic (turn it into a Reel; you may add one extra genuinely useful insig
 Headline: {headline}
 Details: {details}
 
-Build trust the way good teachers do (problem first, then proof by logic):
-- Open on a REAL problem or moment this audience recognises from their own life (a specific situation,
-  not a generic topic). The viewer should think "that's me".
-- Promise one concrete, realistic outcome they get by the end.
-- Give the answer, and for each point say WHY it works in plain words (the reason is what builds trust).
-- Include one honest limit or caveat (when it does not apply, or when to ask a professional).
-- Sound like a helpful friend who knows the subject, not a salesperson. No hype, no income or result promises.
+{style_block}
 
 Rules:
 - Only well-established facts. Never invent statistics, studies, names, prices, laws or dates.
@@ -40,7 +34,7 @@ Rules:
 - No engagement bait ("like if", "share if", "comment YES", "save this", "watch till the end").
 - The FIRST sentence names the problem and makes a bold but true point (the hook).
 - End with one short, genuine question to the viewer.
-{format_rules}
+{format_rules}{extra_rules}
 
 Return JSON with exactly these keys:
 "hook": on-screen opening title, max 6 words, no emojis,
@@ -50,10 +44,20 @@ Return JSON with exactly these keys:
     {num_field}"search": 2-4 plain ENGLISH words describing ONE concrete, filmable subject for a real stock
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
-              Every search phrase MUST include this page's main visual subject ({subject}) or a close
-              variant, so the footage clearly fits the page (e.g. "{subject} closeup", "{subject} at night").
+{subject_rule}
 "caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
+
+TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof by logic):
+- Open on a REAL problem or moment this audience recognises from their own life (a specific situation,
+  not a generic topic). The viewer should think "that's me".
+- Promise one concrete, realistic outcome they get by the end.
+- Give the answer, and for each point say WHY it works in plain words (the reason is what builds trust).
+- Include one honest limit or caveat (when it does not apply, or when to ask a professional).
+- Sound like a helpful friend who knows the subject, not a salesperson. No hype, no income or result promises."""
+
+SUBJECT_RULE = """              Every search phrase MUST include this page's main visual subject ({subject}) or a close
+              variant, so the footage clearly fits the page (e.g. "{subject} closeup", "{subject} at night")."""
 
 STORY_RULES = "- Spoken script 60-85 words in total, natural and conversational, short sentences."
 LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Number one...", "Number two..."),
@@ -72,10 +76,16 @@ def write_script(page, card):
         details += "\nVerified facts (use ONLY these numbers/claims, attribute claims to the company): " + card["_facts"]
     as_list = use_list(page, card)
     n = random.choice([3, 4, 5])
+    subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
+    extra = page["image"].get("extra_rules")
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
+                           style_block=page["image"].get("style_block") or TRUST_BLOCK,
+                           subject_rule=SUBJECT_RULE.format(subject=subject) if page["image"].get("reel_subject")
+                           else "              Pick footage that clearly shows the place, object or era named in the scene.",
+                           extra_rules=("\nPage-specific rules (they override the general rules above where they "
+                                        "conflict):\n" + extra) if extra else "",
                            language=page["image"].get("language") or page["language"],
                            headline=card["headline"], details=details or "-",
-                           subject=page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", ""),
                            format_rules=LIST_RULES.format(n=n) if as_list else STORY_RULES,
                            scene_count=f"{n + 2} (1 intro scene, {n} numbered scenes, 1 closing scene)" if as_list
                            else "4 to 6",
