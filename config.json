@@ -448,7 +448,11 @@
       "audience": "History lovers in the US, UK, Canada and Australia, adults of all ages, curious about how world events connect across time.",
       "language": "Clear, vivid, conversational American English, like a great storyteller.",
       "image": {
-        "slots": [],
+        "slots": [
+          "12:00",
+          "19:00",
+          "22:00"
+        ],
         "footer": "What the world looked like, side by side.",
         "angle": "WORLD HISTORY IN PARALLEL: 'meanwhile' timelines (what was happening in different parts of the world at the same moment), surprising 'older than you think' comparisons (e.g. Oxford University is older than the Aztec Empire), 'same year' facts, how famous empires, inventions and landmarks overlap in time, and 'the year you were born' nostalgia for a US audience (1950s to 2000s). Every fact must carry its year or century and be well documented in standard encyclopedias.",
         "types": [
@@ -484,7 +488,8 @@
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
         "reel_subject": "",
-        "fact_check": true
+        "fact_check": true,
+        "commons": true
       },
       "voice": "Charon",
       "voice_style": "calm, warm, intriguing documentary storyteller, clear and unhurried"
@@ -510,7 +515,8 @@
       "PAWS": "09:30",
       "DEM": "14:00",
       "FIN": "10:00",
-      "HOME": "11:00"
+      "HOME": "11:00",
+      "HIST": "14:30"
     },
     "kinds": [
       "teaser",

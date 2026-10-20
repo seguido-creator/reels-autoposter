@@ -45,7 +45,7 @@ Return JSON with exactly these keys:
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
 {subject_rule}
-"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
+{commons_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
 
 TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof by logic):
@@ -58,6 +58,12 @@ TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof
 
 SUBJECT_RULE = """              Every search phrase MUST include this page's main visual subject ({subject}) or a close
               variant, so the footage clearly fits the page (e.g. "{subject} closeup", "{subject} at night")."""
+
+COMMONS_FIELD = """    "commons": (optional) when the scene names a specific famous artwork, historic photograph, old map or
+              ancient artifact that is public domain (e.g. "The Starry Night Van Gogh", "Mona Lisa",
+              "Rosetta Stone", "1889 Eiffel Tower photograph"), its exact name for a Wikimedia Commons search;
+              otherwise "". Use it for at most half of the scenes.
+"""
 
 STORY_RULES = "- Spoken script 60-85 words in total, natural and conversational, short sentences."
 LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Number one...", "Number two..."),
@@ -94,7 +100,8 @@ def write_script(page, card):
                            scene_count=f"{n + 2} (1 intro scene, {n} numbered scenes, 1 closing scene)" if as_list
                            else "4 to 6",
                            num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
-                           if as_list else "")
+                           if as_list else "",
+                           commons_field=COMMONS_FIELD if page["image"].get("commons") else "")
     for _ in range(3):
         resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
             response_mime_type="application/json", temperature=0.8))
@@ -136,6 +143,12 @@ def find_clips(page, scenes, used_ids):
     picked, taken = [], set(used_ids)
     for sc in scenes:
         hit, backup = None, None
+        if page["image"].get("commons") and str(sc.get("commons") or "").strip():
+            hit = commons_image(str(sc["commons"]).strip(), taken)
+            if hit:
+                taken.add(hit["id"])
+                picked.append(hit)
+                continue
         words = str(sc["search"]).split()
         for q in (" ".join(words), " ".join(words[:2]), fallback):
             r = requests.get("https://pixabay.com/api/videos/", timeout=30, params={
@@ -163,6 +176,41 @@ def find_clips(page, scenes, used_ids):
         taken.add(f"pv{hit['id']}")
         picked.append(hit)
     return picked
+
+
+WIKI_UA = {"User-Agent": "HistoryDecodedBot/1.0 (educational Facebook page; uses public-domain media)"}
+PD_LICENSES = ("public domain", "pd-", "cc0", "pdm")
+
+
+def commons_image(query, taken=()):
+    """A public-domain still (artwork, historic photo, map) from Wikimedia Commons, checked by Gemini.
+    Returns a clip-like dict {id, image_url, tags, credit} or None."""
+    import requests
+    try:
+        r = requests.get("https://commons.wikimedia.org/w/api.php", headers=WIKI_UA, timeout=30, params={
+            "action": "query", "format": "json", "generator": "search", "gsrnamespace": 6,
+            "gsrsearch": f"filetype:bitmap {query}", "gsrlimit": 8, "prop": "imageinfo",
+            "iiprop": "url|extmetadata|size|mime", "iiurlwidth": 1600})
+        pages = sorted(r.json().get("query", {}).get("pages", {}).values(), key=lambda p: p.get("index", 99))
+    except Exception as exc:
+        log(f"commons search failed: {str(exc)[:120]}")
+        return None
+    for p in pages:
+        info = (p.get("imageinfo") or [{}])[0]
+        meta = info.get("extmetadata") or {}
+        lic = " ".join(str((meta.get(k) or {}).get("value", "")) for k in ("LicenseShortName", "License")).lower()
+        wid = f"wc{p.get('pageid')}"
+        if wid in taken or not any(x in lic for x in PD_LICENSES):
+            continue
+        if info.get("mime") not in ("image/jpeg", "image/png") or min(info.get("width", 0), info.get("height", 0)) < 600:
+            continue
+        url = info.get("thumburl") or info.get("url")
+        if not _shows({"videos": {"medium": {"thumbnail": url}}}, [query]):
+            continue
+        artist = re.sub(r"<[^>]+>", "", str((meta.get("Artist") or {}).get("value", ""))).strip()[:60]
+        log(f"commons: '{query}' -> {p.get('title')} ({lic[:30]})")
+        return {"id": wid, "image_url": url, "tags": str(p.get("title", "")), "credit": artist}
+    return None
 
 
 BLOCK = {"military", "soldier", "soldiers", "army", "war", "weapon", "gun", "police", "blood",
@@ -233,10 +281,27 @@ def render(page, script, clips, out_path, clip_paths=None):
 
     segs = []
     for i, (d, clip) in enumerate(zip(shares, clips)):
+        seg = work / f"seg{i}.mp4"
+        if clip.get("image_url") and not clip_paths:
+            # public-domain still: whole picture on a blurred copy of itself, slow push-in
+            img = work / f"img{i}.jpg"
+            import requests
+            with open(img, "wb") as fh:
+                fh.write(requests.get(clip["image_url"], headers=WIKI_UA, timeout=60).content)
+            frames = max(int(d * FPS), 1)
+            transform._run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(FPS), "-i", str(img), "-t", f"{d:.3f}",
+                            "-filter_complex",
+                            f"[0]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=30:2,"
+                            f"eq=brightness=-0.12[bg];[0]scale={W - 60}:{H - 500}:force_original_aspect_ratio=decrease[fg];"
+                            f"[bg][fg]overlay=(W-w)/2:(H-h)/2,scale={int(W * 1.12)}:-2,"
+                            f"zoompan=z='min(1+0.0008*on,1.08)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':"
+                            f"s={W}x{H}:fps={FPS},setsar=1,format=yuv420p",
+                            "-frames:v", str(frames), "-an", *transform.VCODEC, str(seg)])
+            segs.append(seg)
+            continue
         src = Path(clip_paths[i]) if clip_paths else work / f"src{i}.mp4"
         if not clip_paths:
             _download(clip["videos"]["medium"]["url"], src)
-        seg = work / f"seg{i}.mp4"
         transform._run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", "-i", str(src),
                         "-t", f"{d:.3f}", "-an", "-vf",
                         f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
@@ -367,11 +432,14 @@ def make(page, card, out_path, used_ids=()):
         tags = tags.split()
     tags = [t if str(t).startswith("#") else f"#{t}" for t in tags][:5]
     message = str(script.get("caption") or card.get("caption") or "").strip()
+    if any(c.get("image_url") for c in clips):
+        message += "\n\nHistoric images: Wikimedia Commons (public domain)"
     if tags:
         message += "\n\n" + " ".join(tags)
+    ref = lambda c: c["id"] if str(c["id"]).startswith("wc") else f"pv{c['id']}"
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
-        f"{sc['search']} -> pv{c['id']} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
-    return secs, message, [f"pv{c['id']}" for c in clips]
+        f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
+    return secs, message, [ref(c) for c in clips]
 
 
 def contact_sheet(mp4, out_png, small_mp4=None):
