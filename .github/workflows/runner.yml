@@ -52,6 +52,8 @@ jobs:
       FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
       FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
       FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
+      FB_PAGE_ID_HIST: ${{ secrets.FB_PAGE_ID_HIST }}
+      FB_TOKEN_HIST: ${{ secrets.FB_TOKEN_HIST }}
       RENDER_ENGINE: remotion
       MINUTES: ${{ inputs.minutes || '300' }}
       DRY_RUN: ${{ inputs.dry_run || 'no' }}
