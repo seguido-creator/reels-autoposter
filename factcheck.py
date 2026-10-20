@@ -36,6 +36,8 @@ Rules:
 - Comparisons ("X years before Y", "still alive when...") must follow from the verified dates.
 - Ancient dates are estimates: false precision is an error.
 - Quotes attributed to real people must be verifiable word for word, otherwise they are errors.
+- Internal consistency is checked too: counts in the text ("these 3", "two events") must match the number of
+  items actually given, and every item must belong to the stated year or period. Mismatches are errors.
 - verdict "pass": everything checks out. "fix": the main idea is true but some details are wrong or overstated.
   "fail": the main claim itself is false or cannot be verified.
 
