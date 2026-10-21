@@ -32,12 +32,15 @@ Rules:
 - Only well-established facts. Never invent statistics, studies, names, prices, laws or dates.
 - No medical, legal or financial advice for individuals; general education only.
 - No engagement bait ("like if", "share if", "comment YES", "save this", "watch till the end").
-- The FIRST sentence names the problem and makes a bold but true point (the hook).
 - End with one short, genuine question to the viewer.
+{hook_rules}
 {format_rules}{extra_rules}
 
 Return JSON with exactly these keys:
-"hook": on-screen opening title, max 6 words, no emojis,
+"hooks": exactly 3 DIFFERENT hook options, each using a different style from the hook list above, each an
+    object with "style" (the style name), "hook" (on-screen opening title, max 6 words, no emojis; the topic
+    must be obvious even on mute) and "intro_vo" (the first spoken 1-2 sentences, max 22 words, opening the
+    video in that style and leading naturally into scene 2),
 "scenes": {scene_count} objects in order, each with
     "vo": the part of the script spoken during this scene (1-2 short sentences),
     "key": the single most important word of this scene, copied exactly as it appears in "vo" (shown big on screen),
@@ -64,6 +67,60 @@ COMMONS_FIELD = """    "commons": (optional) when the scene names a specific fam
               "Rosetta Stone", "1889 Eiffel Tower photograph"), its exact name for a Wikimedia Commons search;
               otherwise "". Use it for at most half of the scenes.
 """
+
+HOOK_RULES = """
+HOOKS AND RETENTION (patterns used by the most-watched short-form creators; use the patterns, never copy their words):
+- The first 2-3 seconds decide everything. The on-screen hook + first spoken line must make the topic obvious
+  instantly, even with the sound off, and use plain words a 12-year-old understands.
+- Anchor it in something the audience already knows (a famous brand, place, object, everyday habit).
+- Promise only what the video truly delivers; the payoff must match the hook (no bait, no fake shock).
+- Hook styles to choose from:
+  curiosity_gap ("Most people get this wrong about X"), myth_bust ("Stop doing X"), surprising_fact (a verified,
+  surprising number or fact up front), end_first (show/say the result or answer first, then how), direct_question
+  ("Did you know...?" / "Why does X...?"), pain_point (a specific moment the viewer lives: "If your cat does X..."),
+  familiar_anchor (start from something famous and twist it), time_parallel ("While X was happening, Y...").
+- Keep it moving: every 3-5 seconds a new beat (a "but...", "so...", a new fact, a new image). Save the most
+  surprising point for last, and end on a line that makes the start feel worth rewatching.
+"""
+
+JUDGE_PROMPT = """Three opening hooks were written for a short faceless Reel on the Facebook Page "{brand}" (audience:
+{audience}). The video is about: {headline}.
+{options}
+Pick the ONE most likely to stop a scrolling viewer in the first 2 seconds AND keep them watching, judged on:
+instantly clear on mute, specific and concrete, anchored in something familiar, emotionally intriguing, honest (the
+video can deliver it), and right for this audience. {history}
+Reply with JSON: {{"pick": 1, 2 or 3, "why": "one short sentence"}}"""
+
+
+def pick_hook(page, data, card):
+    """Chooses the strongest of the 3 hook options; falls back to the first. Sets hook + scene-1 voice-over."""
+    import transform
+    from google.genai import types
+    opts = [h for h in (data.get("hooks") or []) if isinstance(h, dict) and str(h.get("hook", "")).strip()
+            and str(h.get("intro_vo", "")).strip()]
+    if not opts:
+        return data
+    best = 0
+    if len(opts) > 1:
+        lines = "\n".join(f"{i + 1}. [{o.get('style', '')}] on-screen: {o['hook']} | spoken: {o['intro_vo']}"
+                          for i, o in enumerate(opts))
+        try:
+            resp, _ = transform.generate(transform._gemini_client(), JUDGE_PROMPT.format(
+                brand=page["brand"], audience=page.get("audience", ""), headline=card.get("headline", ""),
+                options=lines, history=page.get("_hook_hint", "")),
+                types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
+            best = max(0, min(len(opts) - 1, int(json.loads(resp.text or "{}").get("pick", 1)) - 1))
+        except Exception as exc:
+            log(f"[{page['key']}] hook judge skipped ({str(exc)[:80]})")
+    o = opts[best]
+    data["hook"] = str(o["hook"]).strip()
+    data["hook_style"] = re.sub(r"[^a-z_]", "", str(o.get("style", "")).lower().replace(" ", "_").replace("-", "_")) or "other"
+    if data.get("scenes"):
+        data["scenes"][0]["vo"] = str(o["intro_vo"]).strip()
+    log(f"[{page['key']}] hook ({data['hook_style']}): {data['hook']} | options: "
+        + " / ".join(f"{x.get('style')}: {x.get('hook')}" for x in opts))
+    return data
+
 
 STORY_RULES = "- Spoken script 60-85 words in total, natural and conversational, short sentences."
 LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Number one...", "Number two..."),
@@ -97,6 +154,7 @@ def write_script(page, card):
                            language=page["image"].get("language") or page["language"],
                            headline=card["headline"], details=details or "-",
                            format_rules=LIST_RULES.format(n=n) if as_list else STORY_RULES,
+                           hook_rules=HOOK_RULES,
                            scene_count=f"{n + 2} (1 intro scene, {n} numbered scenes, 1 closing scene)" if as_list
                            else "4 to 6",
                            num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
@@ -113,8 +171,12 @@ def write_script(page, card):
             data = data[0] if data and isinstance(data[0], dict) else {}
         scenes = [s for s in (data.get("scenes") or []) if isinstance(s, dict)
                   and str(s.get("vo", "")).strip() and str(s.get("search", "")).strip()]
-        if data.get("hook") and 3 <= len(scenes) <= 8:
+        if (data.get("hooks") or data.get("hook")) and 3 <= len(scenes) <= 8:
             data["scenes"] = scenes
+            data = pick_hook(page, data, card)
+            if not data.get("hook"):
+                log(f"[{page['key']}] explainer script without a usable hook, asking again")
+                continue
             data["total"] = n if as_list else 0
             if not as_list:
                 for sc in scenes:
@@ -440,7 +502,7 @@ def make(page, card, out_path, used_ids=()):
     ref = lambda c: c["id"] if str(c["id"]).startswith("wc") else f"pv{c['id']}"
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
         f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
-    return secs, message, [ref(c) for c in clips]
+    return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}"]
 
 
 def contact_sheet(mp4, out_png, small_mp4=None):
