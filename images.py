@@ -581,6 +581,43 @@ def make_reel(page, card, png_path, out_mp4, rows):
     return None, "photo"
 
 
+PUBLISHED_FOLDER = "Reels Autoposter - Published"
+
+
+def save_published(page, mp4, card, caption, video_id, rnote):
+    """Keeps a copy of every original Reel we published (mp4 + .json sidecar) in the Drive folder
+    "Reels Autoposter - Published" so other platforms (YouTube, Instagram, ...) can reuse it.
+    Bought 'pack' Reels never come through here. Never raises."""
+    try:
+        from common import drive_service, google_creds, upload_render
+        drive = drive_service(google_creds())
+        q = (f"name='{PUBLISHED_FOLDER}' and mimeType='application/vnd.google-apps.folder' "
+             "and trashed=false and 'me' in owners")
+        found = drive.files().list(q=q, fields="files(id)", pageSize=1).execute().get("files", [])
+        folder = found[0]["id"] if found else drive.files().create(
+            body={"name": PUBLISHED_FOLDER, "mimeType": "application/vnd.google-apps.folder"},
+            fields="id").execute()["id"]
+        stem = f"{page['key']}_{utcnow():%Y%m%d_%H%M}_{video_id}"
+        meta = {
+            "page": page["key"], "brand": page["brand"], "language": page.get("language", ""),
+            "kind": "explainer" if str(rnote).startswith("explainer") else "photo_reel",
+            "title": clean(card.get("headline", "")), "topic": clean(card.get("topic", "")),
+            "type": card.get("type", ""), "series": card.get("_series", ""),
+            "caption": caption, "hashtags": card.get("hashtags", []),
+            "sources": card.get("_sources", []), "fact_checked": bool(card.get("_fc")),
+            "posted_at_utc": utcnow().isoformat(timespec="seconds"), "fb_video_id": video_id,
+        }
+        side = Path(f"/tmp/{stem}.json")
+        side.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+        upload_render(drive, mp4, stem + ".mp4", folder)
+        upload_render(drive, side, stem + ".json", folder, mime="application/json")
+        log(f"[{page['key']}] saved published copy {stem}")
+        return "; saved"
+    except Exception as exc:
+        log(f"[{page['key']}] could not save published copy: {str(exc)[:150]}")
+        return "; save FAILED"
+
+
 def process(page, cfg, ws, rows, now, force=False, preview=False):
     page_id = os.environ.get(page["page_id_env"], "").strip()
     token = os.environ.get(page["token_env"], "").strip()
@@ -674,6 +711,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                 vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
                 post_id = vid
                 note = f"text {card['model']}; reel-only {state} ({rnote})"
+                note += save_published(page, mp4, card, rmsg or message, vid, rnote)
                 log(f"[{page['key']}] {label}: posted reel {vid} ({state}) '{card['headline']}'")
             except Exception as rexc:
                 note = f"reel-only FAILED {str(rexc)[:150]}; "
