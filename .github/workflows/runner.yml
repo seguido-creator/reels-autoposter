@@ -90,6 +90,7 @@ jobs:
               python autopost.py || { echo "::warning::autopost failed"; fails=$((fails+1)); }
               python images.py || { echo "::warning::images failed"; fails=$((fails+1)); }
               python community.py || { echo "::warning::community failed"; fails=$((fails+1)); }
+              python analytics.py || echo "::warning::analytics failed"
             fi
             echo "::endgroup::"
             now=$(date +%s)
