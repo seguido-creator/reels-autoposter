@@ -240,7 +240,32 @@ def find_clips(page, scenes, used_ids):
     return picked
 
 
-WIKI_UA = {"User-Agent": "HistoryDecodedBot/1.0 (educational Facebook page; uses public-domain media)"}
+WIKI_UA = {"User-Agent": "HistoryDecodedBot/1.0 (https://www.facebook.com/61595243776702; freeguideshub@gmail.com) python-requests"}
+
+
+def _commons_file(urls, wid):
+    """Downloads a Commons image and checks it really is a picture (Wikimedia sometimes answers bots with
+    an error page). Returns a local, normalised JPEG path or None. ffmpeg never sees a broken file."""
+    import io
+    import tempfile
+    import requests
+    from PIL import Image
+    for url in [u for u in urls if u]:
+        try:
+            r = requests.get(url, headers=WIKI_UA, timeout=60)
+            r.raise_for_status()
+            im = Image.open(io.BytesIO(r.content))
+            im.load()
+            im = im.convert("RGB")
+            im.thumbnail((1600, 1600))
+            if min(im.size) < 300:
+                continue
+            path = Path(tempfile.gettempdir()) / f"{wid}.jpg"
+            im.save(path, "JPEG", quality=92)
+            return str(path)
+        except Exception as exc:
+            log(f"commons download failed ({str(exc)[:100]}): {url[:90]}")
+    return None
 PD_LICENSES = ("public domain", "pd-", "cc0", "pdm")
 
 
@@ -267,11 +292,12 @@ def commons_image(query, taken=()):
         if info.get("mime") not in ("image/jpeg", "image/png") or min(info.get("width", 0), info.get("height", 0)) < 600:
             continue
         url = info.get("thumburl") or info.get("url")
-        if not _shows({"videos": {"medium": {"thumbnail": url}}}, [query]):
+        path = _commons_file([url, info.get("url")], wid)
+        if not path or not _shows({"videos": {"medium": {"thumbnail": url}}}, [query], path):
             continue
         artist = re.sub(r"<[^>]+>", "", str((meta.get("Artist") or {}).get("value", ""))).strip()[:60]
         log(f"commons: '{query}' -> {p.get('title')} ({lic[:30]})")
-        return {"id": wid, "image_url": url, "tags": str(p.get("title", "")), "credit": artist}
+        return {"id": wid, "image_url": url, "image_path": path, "tags": str(p.get("title", "")), "credit": artist}
     return None
 
 
@@ -292,19 +318,24 @@ def _relevant(tags, want, must=()):
     return any(hit(w) for w in want)
 
 
-def _shows(hit, subject):
-    """True if the clip's thumbnail clearly shows the subject (checked by Gemini). Errors -> True."""
+def _shows(hit, subject, local=None):
+    """True if the clip's thumbnail (or a local image file) clearly shows the subject (checked by Gemini).
+    Errors -> True."""
     import requests
     import transform
     from google.genai import types
     thumb = (hit.get("videos") or {}).get("medium", {}).get("thumbnail")
-    if not thumb:
+    if not thumb and not local:
         return True
     try:
-        img = requests.get(thumb, timeout=20)
-        img.raise_for_status()
+        if local:
+            data = Path(local).read_bytes()
+        else:
+            img = requests.get(thumb, timeout=20)
+            img.raise_for_status()
+            data = img.content
         resp, _ = transform.generate(transform._gemini_client(), [
-            types.Part.from_bytes(data=img.content, mime_type="image/jpeg"),
+            types.Part.from_bytes(data=data, mime_type="image/jpeg"),
             f"Is a {' or '.join(subject)} clearly visible in this image? Answer only YES or NO."],
             types.GenerateContentConfig(temperature=0))
         return "YES" in (resp.text or "").upper()
@@ -346,10 +377,9 @@ def render(page, script, clips, out_path, clip_paths=None):
         seg = work / f"seg{i}.mp4"
         if clip.get("image_url") and not clip_paths:
             # public-domain still: whole picture on a blurred copy of itself, slow push-in
-            img = work / f"img{i}.jpg"
-            import requests
-            with open(img, "wb") as fh:
-                fh.write(requests.get(clip["image_url"], headers=WIKI_UA, timeout=60).content)
+            img = Path(clip.get("image_path") or "")
+            if not img.is_file():
+                raise RuntimeError(f"commons image missing for scene {i + 1}")
             frames = max(int(d * FPS), 1)
             transform._run(["ffmpeg", "-y", "-v", "error", "-loop", "1", "-framerate", str(FPS), "-i", str(img), "-t", f"{d:.3f}",
                             "-filter_complex",

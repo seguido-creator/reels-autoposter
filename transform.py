@@ -361,8 +361,12 @@ def _esc(s):
     return s.replace("\\", "").replace("'", "").replace(":", " ").replace("%", "")
 
 
-def _run(cmd):
-    res = subprocess.run(cmd, capture_output=True, text=True)
+def _run(cmd, timeout=900):
+    """Every ffmpeg call has a time limit, so one bad input can never freeze the whole runner."""
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"ffmpeg timed out after {timeout}s")
     if res.returncode != 0:
         raise RuntimeError(f"ffmpeg failed: {res.stderr[-800:]}")
 
