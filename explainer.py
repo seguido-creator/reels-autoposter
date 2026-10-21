@@ -396,6 +396,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
         "hook": str(script["hook"]), "brand": brand, "monogram": mono,
         "outro": str(page.get("follow_cta") or page["image"].get("footer") or "Follow for more"), "totalN": int(script.get("total") or 0),
         "scenes": scenes, "words": words,
+        "intro": page["image"].get("reel_intro") or "pill", "rec": bool(page["image"].get("rec_zoom")),
         "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
                   "bgTop": th.get("bg_top", "#111111"), "bgBottom": th.get("bg_bottom", "#000000"),
                   "text": th.get("text", "#FFFFFF"), "titleFont": "title.ttf", "bodyFont": "body.ttf",
