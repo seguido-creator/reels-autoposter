@@ -18,11 +18,12 @@ export type ReelProps = {
   total: number; lead: number; video: string; audio: string;
   hook: string; brand: string; monogram: string; outro: string;
   totalN: number; scenes: Scene[]; words: Word[]; theme: Theme;
+  intro?: "pill" | "magazine"; rec?: boolean;
 };
 
 export const defaultProps: ReelProps = {
   total: 10, lead: 0.3, video: "joined.mp4", audio: "vo.wav", hook: "Hook", brand: "Brand",
-  monogram: "B", outro: "Follow for more", totalN: 0, scenes: [], words: [],
+  monogram: "B", outro: "Follow for more", totalN: 0, scenes: [], words: [], intro: "pill", rec: false,
   theme: { accent: "#E8B84A", onAccent: "#0F2742", bgTop: "#0F2742", bgBottom: "#081626", text: "#FFFFFF",
     titleFont: "title.ttf", bodyFont: "body.ttf", upper: true },
 };
@@ -66,6 +67,94 @@ const Hook: React.FC<{ p: ReelProps }> = ({ p }) => {
         fontFamily: "Title", fontSize: text.length > 22 ? 92 : 112, lineHeight: 1.08, textAlign: "center",
         padding: "18px 44px", borderRadius: 30, maxWidth: 940, boxShadow: "0 24px 70px rgba(0,0,0,.5)",
       }}>{text}</div>
+    </AbsoluteFill>
+  );
+};
+
+// Magazine Cover intro: masthead + cover line, like a magazine front page
+const MagazineIntro: React.FC<{ p: ReelProps }> = ({ p }) => {
+  const f = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const s = spring({ frame: f, fps, config: { damping: 16, stiffness: 120 } });
+  const s2 = spring({ frame: f - 10, fps, config: { damping: 14 } });
+  const out = interpolate(f, [80, 95], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const brand = p.brand.toUpperCase();
+  const words = p.hook.split(" ");
+  return (
+    <AbsoluteFill style={{ opacity: out }}>
+      <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 38%)" }} />
+      <div style={{ position: "absolute", top: 150, width: "100%", textAlign: "center",
+        transform: `translateY(${(1 - s) * -120}px)`, opacity: s }}>
+        <div style={{ fontFamily: "Title", fontSize: brand.length > 14 ? 128 : 150, lineHeight: 1, color: p.theme.text,
+          letterSpacing: 4, textShadow: "0 6px 30px rgba(0,0,0,.6)" }}>{brand}</div>
+        <div style={{ margin: "18px auto 0", width: 860, borderTop: `4px solid ${p.theme.accent}`,
+          borderBottom: `1px solid ${p.theme.accent}`, padding: "10px 0", fontFamily: "Body", fontSize: 30,
+          letterSpacing: 6, color: p.theme.text }}>SPECIAL EDITION</div>
+      </div>
+      <div style={{ position: "absolute", left: 70, bottom: 640, width: 900, opacity: s2,
+        transform: `translateX(${(1 - s2) * -200}px)` }}>
+        <div style={{ display: "inline-block", background: p.theme.accent, color: p.theme.onAccent, fontFamily: "Body",
+          fontSize: 34, padding: "4px 18px", borderRadius: 8, marginBottom: 14 }}>COVER STORY</div>
+        <div style={{ fontFamily: "Title", fontSize: 96, lineHeight: 1.04, color: "#FFFFFF",
+          textShadow: "0 6px 26px rgba(0,0,0,.75)" }}>
+          {(p.theme.upper ? words.map((w) => w.toUpperCase()) : words).join(" ")}</div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+// Checklist Pop: list Reels get a running checklist; each point ticks in when it is spoken
+const Checklist: React.FC<{ p: ReelProps }> = ({ p }) => {
+  const f = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = f / fps;
+  const items = p.scenes.filter((sc) => sc.num > 0).sort((a, b) => a.num - b.num);
+  if (!items.length) return null;
+  const first = items[0].start;
+  const last = Math.max(...items.map((i) => i.end));
+  if (t < first || t > last) return null;
+  const fade = interpolate(t, [first, first + 0.3, last - 0.3, last], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <div style={{ position: "absolute", top: 420, left: 70, opacity: fade, display: "flex", flexDirection: "column", gap: 14 }}>
+      {items.map((it, i) => {
+        const on = t >= it.start;
+        const pop = spring({ frame: f - Math.round(it.start * fps), fps, config: { damping: 10, stiffness: 200 } });
+        const label = (it.key || `Point ${it.num}`);
+        return (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, opacity: on ? 1 : 0.55 }}>
+            <div style={{ width: 54, height: 54, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center",
+              background: on ? p.theme.accent : "rgba(0,0,0,.45)", border: `3px solid ${p.theme.accent}`,
+              color: p.theme.onAccent, fontFamily: "Body", fontSize: 38, transform: `scale(${on ? 0.7 + 0.3 * pop : 1})` }}>
+              {on ? "✓" : ""}</div>
+            <div style={{ fontFamily: "Body", fontSize: 40, color: "#FFFFFF", textShadow: "0 3px 12px rgba(0,0,0,.8)",
+              textDecoration: "none" }}>{p.theme.upper ? label.toUpperCase() : label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// REC viewfinder + punch-in on key moments (documentary / archive feel)
+const RecFrame: React.FC<{ p: ReelProps }> = ({ p }) => {
+  const f = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = f / fps;
+  const active = p.scenes.some((sc) => sc.key && t >= sc.start && t < Math.min(sc.end, sc.start + 1.6));
+  if (!active) return null;
+  const c = "rgba(255,255,255,.9)";
+  const L = 90, W = 6, M = 60;
+  const corner = (st: React.CSSProperties) => <div style={{ position: "absolute", width: L, height: L, ...st }} />;
+  return (
+    <AbsoluteFill>
+      {corner({ top: M + 120, left: M, borderTop: `${W}px solid ${c}`, borderLeft: `${W}px solid ${c}` })}
+      {corner({ top: M + 120, right: M, borderTop: `${W}px solid ${c}`, borderRight: `${W}px solid ${c}` })}
+      {corner({ bottom: M + 220, left: M, borderBottom: `${W}px solid ${c}`, borderLeft: `${W}px solid ${c}` })}
+      {corner({ bottom: M + 220, right: M, borderBottom: `${W}px solid ${c}`, borderRight: `${W}px solid ${c}` })}
+      <div style={{ position: "absolute", top: M + 150, right: M + 40, fontFamily: "Body", fontSize: 34, color: "#FFFFFF",
+        display: "flex", alignItems: "center", gap: 10, textShadow: "0 2px 8px rgba(0,0,0,.7)" }}>
+        <span style={{ width: 22, height: 22, borderRadius: 11, background: "#E53935",
+          opacity: Math.floor(f / 15) % 2 === 0 ? 1 : 0.25, display: "inline-block" }} />REC</div>
     </AbsoluteFill>
   );
 };
@@ -160,17 +249,26 @@ export const Reel: React.FC<ReelProps> = (p) => {
   const { fps } = useVideoConfig();
   const fr = (s: number) => Math.max(0, Math.round(s * fps));
   const outroLen = 1.6;
+  const frame = useCurrentFrame();
+  const tt = frame / fps;
+  // gentle punch-in on each key moment (only with the REC look)
+  const zoom = p.rec ? 1 + Math.max(0, ...p.scenes.filter((sc) => sc.key).map((sc) =>
+    interpolate(tt, [sc.start, sc.start + 0.35, sc.start + 1.4, sc.start + 1.8], [0, 0.08, 0.08, 0],
+      { extrapolateLeft: "clamp", extrapolateRight: "clamp" }))) : 1;
   const fontFaces = `
 @font-face{font-family:Title;src:url(${staticFile(p.theme.titleFont)});}
 @font-face{font-family:Body;src:url(${staticFile(p.theme.bodyFont)});}`;
   return (
     <AbsoluteFill style={{ backgroundColor: p.theme.bgBottom }}>
       <style>{fontFaces}</style>
-      <OffthreadVideo src={staticFile(p.video)} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <AbsoluteFill style={{ transform: `scale(${zoom})` }}>
+        <OffthreadVideo src={staticFile(p.video)} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </AbsoluteFill>
       {/* top and bottom shade so text stays readable on any footage */}
       <AbsoluteFill style={{ background: "linear-gradient(180deg, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 28%, rgba(0,0,0,0) 55%, rgba(0,0,0,.6) 100%)" }} />
       <Sequence from={fr(p.lead)}><Audio src={staticFile(p.audio)} /></Sequence>
-      <Sequence durationInFrames={fr(3.2)}><Hook p={p} /></Sequence>
+      <Sequence durationInFrames={fr(3.2)}>{p.intro === "magazine" ? <MagazineIntro p={p} /> : <Hook p={p} />}</Sequence>
+      {p.rec ? <RecFrame p={p} /> : null}
       {p.scenes.map((sc, i) => sc.num > 0 && p.totalN > 0 ? (
         <Sequence key={`c${i}`} from={fr(sc.start)} durationInFrames={Math.max(1, fr(sc.end - sc.start))}>
           <Counter sc={sc} p={p} />
@@ -181,6 +279,7 @@ export const Reel: React.FC<ReelProps> = (p) => {
           <KeyFlash sc={sc} p={p} />
         </Sequence>
       ) : null)}
+      <Checklist p={p} />
       <Captions p={p} />
       <Sequence from={fr(p.total - outroLen)}><Outro p={p} /></Sequence>
       <div style={{ position: "absolute", bottom: 150, width: "100%", textAlign: "center", fontFamily: "Body",
