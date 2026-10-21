@@ -599,6 +599,7 @@ def save_published(page, mp4, card, caption, video_id, rnote):
             fields="id").execute()["id"]
         stem = f"{page['key']}_{utcnow():%Y%m%d_%H%M}_{video_id}"
         meta = {
+            "source": "original",
             "page": page["key"], "brand": page["brand"], "language": page.get("language", ""),
             "kind": "explainer" if str(rnote).startswith("explainer") else "photo_reel",
             "title": clean(card.get("headline", "")), "topic": clean(card.get("topic", "")),
