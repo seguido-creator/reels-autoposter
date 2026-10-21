@@ -117,6 +117,8 @@ def write_card(page, recent, trend=None):
         audience=page["audience"], language=style.get("language") or page["language"],
         types=", ".join(style.get("types", ["fact", "tips", "myth", "question"])),
         recent="\n".join(f"- {t}" for t in recent[-40:]) or "- (none yet)")
+    if page.get("_perf"):
+        prompt += "\n\n" + page["_perf"]
     if style.get("extra_rules"):
         prompt += ("\n\nPage-specific rules (they override the general rules above where they conflict):\n"
                    + style["extra_rules"])
@@ -730,13 +732,19 @@ def main():
         return
     from common import drive_service, google_creds, latest_trends, open_sheet
     creds = google_creds()
-    ws = log_sheet(open_sheet(creds))
+    sheet = open_sheet(creds)
+    ws = log_sheet(sheet)
     rows = ws.get_all_records(expected_headers=LOG_HEADER) if ws.row_count > 1 else []
     trends = latest_trends(drive_service(creds))
     for page in all_pages(cfg):
         if only and page["key"].upper() != only:
             continue
         page["_trends"] = trends.get(page["key"].upper(), [])
+        try:
+            import analytics
+            page["_perf"] = analytics.perf_hint(sheet, page["key"]) if not args.preview else ""
+        except Exception as exc:
+            log(f"[{page['key']}] performance hint skipped: {str(exc)[:100]}")
         try:
             process(page, cfg, ws, rows, now, force=bool(args.force), preview=bool(args.preview))
         except Exception as exc:
