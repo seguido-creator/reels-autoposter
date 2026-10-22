@@ -205,7 +205,7 @@ def use_list(page, card):
 
 GENERIC = {"home", "house", "closeup", "close", "view", "scene", "person", "people", "modern", "indoor",
            "outdoor", "background", "shot", "footage", "video", "inside", "small", "large", "beautiful"}
-MAX_LOOKS = 8      # Gemini thumbnail checks per scene
+MAX_LOOKS = 12     # Gemini thumbnail checks per scene
 MAX_STILLS = 2     # scenes that may fall back to the post's own (already checked) photo
 
 
@@ -297,7 +297,7 @@ def find_clips(page, scenes, used_ids, still=None):
             random.shuffle(pool)
             for h in pool[:3]:
                 looks += 1
-                if _fits(h, str(sc["search"])):  # judged against the scene, not the broader query
+                if _fits(h, q):  # judged against the search that found it (always a word from the scene or page)
                     hit = h
                     break
                 if looks >= MAX_LOOKS:
