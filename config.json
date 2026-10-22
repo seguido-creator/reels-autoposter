@@ -385,7 +385,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "money coins",
-        "reel_subject": "money"
+        "reel_subject": ""
       },
       "voice": "Charon",
       "voice_style": "friendly kabayan money coach, clear and confident, natural Taglish"
@@ -442,7 +442,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "clean home interior",
-        "reel_subject": "home"
+        "reel_subject": ""
       },
       "voice": "Kore",
       "voice_style": "bright, practical and friendly, clear and easy to follow"

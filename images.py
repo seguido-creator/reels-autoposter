@@ -669,7 +669,8 @@ def make_reel(page, card, png_path, out_mp4, rows):
     if page["image"].get("reel_mode") == "explainer":
         try:
             import explainer
-            used = {m for r in rows if r.get("page") == page["key"] for m in re.findall(r"pv\d+", r.get("note", ""))}
+            used = {m for r in rows if r.get("page") == page["key"]
+                    for m in re.findall(r"(?:pv|pxv)\d+", r.get("note", ""))}
             _, msg, ids = explainer.make(page, card, out_mp4, used)
             return msg, "explainer " + " ".join(ids)
         except Exception as exc:
@@ -772,6 +773,12 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             photo = None
     if photo is not None:
         card["photo"], card["credit"] = f"pexels:{pid}", credit
+        try:  # the checked photo doubles as a fallback still for Reel scenes without a fitting clip
+            still = Path(f"/tmp/still_{page['key']}.jpg")
+            photo.convert("RGB").save(still, "JPEG", quality=92)
+            card["_still"] = str(still)
+        except Exception as exc:
+            log(f"[{page['key']}] could not keep the photo as a still: {str(exc)[:80]}")
     else:
         photo, photo_info = generate_photo(page, card, cfg)
         card["photo"] = photo_info if photo is not None else f"no photo ({photo_info})"

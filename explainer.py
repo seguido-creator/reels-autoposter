@@ -203,48 +203,114 @@ def use_list(page, card):
     return str(card.get("type", "")) in ("tips", "myth") or random.random() < share
 
 
-def find_clips(page, scenes, used_ids):
-    """One Pixabay video per scene; prefers vertical clips; never reuses an id."""
+GENERIC = {"home", "house", "closeup", "close", "view", "scene", "person", "people", "modern", "indoor",
+           "outdoor", "background", "shot", "footage", "video", "inside", "small", "large", "beautiful"}
+MAX_LOOKS = 8      # Gemini thumbnail checks per scene
+MAX_STILLS = 2     # scenes that may fall back to the post's own (already checked) photo
+
+
+def _queries(search, fallback):
+    """Most specific first: full phrase, word pairs, then each concrete word, then the page's fallback."""
+    words = [w for w in str(search).split() if w]
+    qs = [" ".join(words), " ".join(words[:2]), " ".join(words[-2:])]
+    qs += [w for w in words if len(w) > 3 and w.lower() not in GENERIC]
+    qs.append(fallback)
+    out = []
+    for q in qs:
+        if q and q.lower() not in [x.lower() for x in out]:
+            out.append(q)
+    return out
+
+
+def _pixabay_videos(q, key):
     import requests
-    key = os.environ.get("PIXABAY_API_KEY", "").strip()
+    try:
+        r = requests.get("https://pixabay.com/api/videos/", timeout=30, params={
+            "key": key, "q": q[:100], "safesearch": "true", "per_page": 30, "video_type": "film"})
+        if not r.ok:
+            log(f"pixabay video search '{q}' failed: {r.status_code} {r.text[:80]}")
+            return []
+        return [dict(h, id=f"pv{h['id']}") for h in r.json().get("hits", [])
+                if (h.get("videos") or {}).get("medium", {}).get("url")]
+    except Exception as exc:
+        log(f"pixabay video search '{q}' failed: {str(exc)[:80]}")
+        return []
+
+
+def _pexels_videos(q, key):
+    """Pexels video search, reshaped like Pixabay hits (tags come from the video's page name)."""
+    import requests
     if not key:
-        raise RuntimeError("no PIXABAY_API_KEY")
+        return []
+    try:
+        r = requests.get("https://api.pexels.com/videos/search", headers={"Authorization": key}, timeout=30,
+                         params={"query": q[:100], "per_page": 30, "size": "medium"})
+        if not r.ok:
+            log(f"pexels video search '{q}' failed: {r.status_code}")
+            return []
+        out = []
+        for v in r.json().get("videos", []):
+            files = [f for f in v.get("video_files") or [] if f.get("link") and f.get("file_type") == "video/mp4"
+                     and 700 <= min(f.get("width") or 0, f.get("height") or 0) <= 1300]
+            if not files:
+                continue
+            f = min(files, key=lambda f: (f.get("width") or 0) * (f.get("height") or 0))
+            slug = re.sub(r"\d+/?$", "", str(v.get("url", "")).rstrip("/").rsplit("/", 1)[-1])
+            out.append({"id": f"pxv{v['id']}", "tags": ", ".join(w for w in slug.split("-") if w),
+                        "videos": {"medium": {"url": f["link"], "width": f.get("width") or 0,
+                                              "height": f.get("height") or 0, "thumbnail": v.get("image")}}})
+        return out
+    except Exception as exc:
+        log(f"pexels video search '{q}' failed: {str(exc)[:80]}")
+        return []
+
+
+def find_clips(page, scenes, used_ids, still=None):
+    """One stock video per scene from Pixabay + Pexels. Every clip must be tagged for the scene AND pass a
+    visual check (Gemini looks at the thumbnail); off-topic clips are never used. If nothing fits, up to two
+    scenes reuse the post's own photo (already checked) as a slow-zoom still; otherwise the Reel is skipped."""
+    pkey = os.environ.get("PIXABAY_API_KEY", "").strip()
+    xkey = os.environ.get("PEXELS_API_KEY", "").strip()
+    if not pkey and not xkey:
+        raise RuntimeError("no PIXABAY_API_KEY / PEXELS_API_KEY")
     fallback = page["image"].get("reel_fallback_query") or page["brand"]
     must = [w.lower() for w in str(page["image"].get("reel_subject") or "").split() if len(w) > 2]
-    picked, taken = [], set(used_ids)
+    picked, taken, stills = [], set(used_ids), 0
     for sc in scenes:
-        hit, backup = None, None
+        hit = None
         if page["image"].get("commons") and str(sc.get("commons") or "").strip():
             hit = commons_image(str(sc["commons"]).strip(), taken)
             if hit:
                 taken.add(hit["id"])
                 picked.append(hit)
                 continue
-        words = str(sc["search"]).split()
-        for q in (" ".join(words), " ".join(words[:2]), fallback):
-            r = requests.get("https://pixabay.com/api/videos/", timeout=30, params={
-                "key": key, "q": q[:100], "safesearch": "true", "per_page": 30, "video_type": "film"})
-            if not r.ok:
+        looks = 0
+        for q in _queries(sc["search"], fallback):
+            want = [w.lower() for w in q.split() if len(w) > 3 and w.lower() not in GENERIC] or \
+                   [w.lower() for w in q.split()]
+            cands = [h for h in (_pixabay_videos(q, pkey) if pkey else []) + _pexels_videos(q, xkey)
+                     if h["id"] not in taken and _relevant(h.get("tags", ""), want, must)]
+            if not cands:
                 continue
-            want = [w.lower() for w in q.split() if len(w) > 3] or [w.lower() for w in q.split()]
-            hits = [h for h in r.json().get("hits", []) if f"pv{h['id']}" not in taken
-                    and (h.get("videos") or {}).get("medium", {}).get("url")
-                    and _relevant(h.get("tags", ""), want, must)]
-            if hits:
-                vertical = [h for h in hits if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
-                pool = (vertical or hits)[:8]
-                random.shuffle(pool)
-                backup = backup or pool[0]
-                for h in pool[:4]:  # let Gemini look at the thumbnail; skip clips that don't show the subject
-                    if _shows(h, must or want):
-                        hit = h
-                        break
-                if hit:
+            vertical = [h for h in cands if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
+            pool = (vertical or cands)[:10]
+            random.shuffle(pool)
+            for h in pool[:3]:
+                looks += 1
+                if _shows(h, [str(sc["search"])]):  # judged against the whole scene, not the broader query
+                    hit = h
                     break
-        hit = hit or backup  # nothing passed the visual check: best tagged clip beats no reel
+                if looks >= MAX_LOOKS:
+                    break
+            if hit or looks >= MAX_LOOKS:
+                break
+        if not hit and still and stills < MAX_STILLS:
+            stills += 1
+            hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
+            log(f"[{page['key']}] no fitting clip for '{sc['search']}', using the post photo for this scene")
         if not hit:
-            raise RuntimeError(f"no stock clip for '{sc['search']}'")
-        taken.add(f"pv{hit['id']}")
+            raise RuntimeError(f"no fitting stock clip for '{sc['search']}'")
+        taken.add(hit["id"])
         picked.append(hit)
     return picked
 
@@ -546,18 +612,18 @@ def make(page, card, out_path, used_ids=()):
             if res is not True:
                 raise RuntimeError("script failed fact-check twice: " + "; ".join(map(str, res))[:300])
     follow_up(page, script, card)
-    clips = find_clips(page, script["scenes"], used_ids)
+    clips = find_clips(page, script["scenes"], used_ids, card.get("_still"))
     secs = render(page, script, clips, out_path)
     tags = script.get("hashtags") or []
     if isinstance(tags, str):
         tags = tags.split()
     tags = [t if str(t).startswith("#") else f"#{t}" for t in tags][:5]
     message = str(script.get("caption") or card.get("caption") or "").strip()
-    if any(c.get("image_url") for c in clips):
+    if any(str(c["id"]).startswith("wc") for c in clips):
         message += "\n\nHistoric images: Wikimedia Commons (public domain)"
     if tags:
         message += "\n\n" + " ".join(tags)
-    ref = lambda c: c["id"] if str(c["id"]).startswith("wc") else f"pv{c['id']}"
+    ref = lambda c: str(c["id"])
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
         f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
     return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}"]
