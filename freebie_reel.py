@@ -22,7 +22,8 @@ FREEBIES = {
         "outro": "I-message ang 'IPON' sa Pera Decoded",
         "scenes": [
             {"vo": "Kabayan, bagong sweldo na naman, pero bakit parang kulang pa rin bago matapos ang buwan?",
-             "key": "kulang", "search": "empty wallet money"},
+             "key": "kulang", "search": "empty wallet money",
+             "alt": ["counting money", "wallet", "peso bills"]},
             {"vo": "Kaya gumawa kami ng libreng OFW Monthly Budget template sa Google Sheets.",
              "key": "libreng", "image": "full"},
             {"vo": "Ilagay mo lang ang kita mo, ang plano mong gastos, at kung magkano talaga ang nagastos mo.",
@@ -31,7 +32,8 @@ FREEBIES = {
              "key": "natitira", "image": "summary"},
             {"vo": "Para makuha, i-message lang ang salitang IPON sa Pera Decoded. Libre ito, at hinding-hindi "
                    "namin hihingin ang password o OTP mo.",
-             "key": "IPON", "search": "typing message smartphone"},
+             "key": "IPON", "search": "typing message smartphone",
+             "alt": ["texting on phone", "smartphone hands", "phone"]},
         ],
         "caption": ("Libreng OFW Monthly Budget template para sa'yo, kabayan!\n"
                     "I-message lang ang IPON sa Pera Decoded at ipapadala namin ang link (Google Sheets).\n"
@@ -117,7 +119,15 @@ def build(name, out_mp4):
             clips.append({"id": f"st{len(clips)}", "image_url": "still", "image_path": shots[sc["image"]],
                           "tags": "freebie"})
         else:
-            clips += explainer.find_clips(page, [sc], set())
+            hit = None
+            for q in [sc["search"]] + sc.get("alt", []):
+                try:
+                    hit = explainer.find_clips(page, [dict(sc, search=q)], set())[0]
+                    break
+                except RuntimeError:
+                    continue
+            clips.append(hit or {"id": f"st{len(clips)}", "image_url": "still", "image_path": shots["full"],
+                                 "tags": "freebie"})
     secs = explainer.render(page, script, clips, out_mp4)
     message = f["caption"] + "\n\n" + " ".join(f["hashtags"])
     log(f"[{page['key']}] freebie reel '{name}' {secs:.1f}s")
