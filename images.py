@@ -81,6 +81,87 @@ IMAGE_STYLE = ("Photorealistic, high-end editorial photography, sharp subject, p
                "no logos, no watermarks, no brand names.")
 
 
+PART1_RULES = """
+
+THIS POST IS PART 1 OF A 2-PART STORY (Part 2 posts tomorrow). Pick a topic with enough real substance for two
+posts. Part 1 must be satisfying on its own: deliver a real fact or answer, then honestly set up a bigger,
+related reveal for Part 2. Never hold back the basic answer just to force a follow. Do NOT write "Part 1" or
+any follow line yourself; they are added automatically.
+Add one more JSON key: "part2_plan": one sentence (max 30 words) saying exactly what Part 2 will reveal."""
+
+PART2_RULES = """
+
+THIS POST IS PART 2 OF 2. Part 1 (posted yesterday) was: "{prev}". In Part 1 we promised that Part 2 would
+reveal: {plan}
+Deliver exactly that promise, with a one-line recap of Part 1 at the start so new viewers follow along.
+Same niche and rules as above; it must not repeat Part 1. Do NOT write "Part 2" yourself; it is added
+automatically."""
+
+
+def is_taglish(page):
+    return "taglish" in str(page["image"].get("language") or page.get("language") or "").lower()
+
+
+def part_text(cfg, page, card, key):
+    """Part-series wording for this page's language (key: 'cta' spoken, 'cta_screen' on screen)."""
+    tp = cfg.get("two_part") or {}
+    lang = "tl" if is_taglish(page) else "en"
+    return str(tp.get(f"{key.split('_')[0]}_{lang}" + ("_screen" if key.endswith("screen") else ""), "")).format(
+        brand=page["brand"])
+
+
+def pick_part(cfg, page, mine, now, preview=False):
+    """Decides if this slot is a normal post, a Part 1, or the promised Part 2.
+    Returns (None | {"n": 1} | {"n": 2, "prev": headline, "plan": text, "id": fb id})."""
+    import random
+    tp = cfg.get("two_part") or {}
+    if not tp.get("enabled") or page["key"] in (tp.get("skip_pages") or []):
+        return None
+    if preview:  # previews are normal posts unless PREVIEW_PART=1 or 2 is set
+        want = os.environ.get("PREVIEW_PART", "").strip()
+        if want == "2":
+            return {"n": 2, "prev": "(preview) Part 1 headline", "plan": "(preview) the bigger reveal", "id": "0"}
+        return {"n": 1} if want == "1" else None
+    done2 = " ".join(str(r.get("note", "")) for r in mine if "part2of:" in str(r.get("note", ""))
+                     and "failed" not in str(r.get("slot", "")))
+    for r in reversed(mine):
+        note = str(r.get("note", ""))
+        m = re.search(r"part1:([^;]*)", note)
+        if not m or "failed" in str(r.get("slot", "")) or not str(r.get("fb_post_id", "")).strip():
+            continue
+        if f"part2of:{r['fb_post_id']}" in done2:
+            break  # the latest Part 1 already has its Part 2
+        try:
+            age = now - dt.datetime.fromisoformat(str(r.get("posted_at_utc")).replace("Z", "+00:00"))
+        except Exception:
+            break
+        if age > dt.timedelta(days=tp.get("max_wait_days", 4)):
+            break
+        if age >= dt.timedelta(hours=tp.get("gap_hours", 18)):
+            return {"n": 2, "prev": str(r.get("headline", "")), "plan": m.group(1).strip(), "id": str(r["fb_post_id"])}
+        return None  # Part 2 is owed but it's not "tomorrow" yet: normal post now
+    return {"n": 1} if random.random() < tp.get("share", 0.2) else None
+
+
+def part_caption(cfg, page, card, text):
+    """Adds 'Part 1 of 2' / 'Part 2 of 2' framing and the follow line to a caption."""
+    part = card.get("_part")
+    if not part or not text:
+        return text
+    head = f"Part {part['n']} of 2: "
+    if text.startswith(card.get("_series", "\x00") + ": "):
+        text = text[len(card["_series"]) + 2:]
+        head = f"{card['_series']} - {head}"
+    body, sep, tags = text.partition("\n\n#")
+    if part["n"] == 1:
+        body = body.rstrip() + "\n\n" + part_text(cfg, page, card, "cta")
+    else:
+        missed = "Hindi mo pa napanood ang Part 1?" if is_taglish(page) else "Missed Part 1?"
+        link = f"https://www.facebook.com/{part['id']}" if "_" in part["id"] else f"https://www.facebook.com/reel/{part['id']}"
+        body = body.rstrip() + f"\n\n{missed} {link}"
+    return head + body + (sep + tags if sep else "")
+
+
 # ---------------------------------------------------------------- pages
 def all_pages(cfg):
     """Reel pages that have an image block, plus image-only pages."""
@@ -107,7 +188,7 @@ def any_image_due(cfg, now_utc):
 
 
 # ---------------------------------------------------------------- content
-def write_card(page, recent, trend=None):
+def write_card(page, recent, trend=None, part=None):
     import transform
     from google.genai import types
     client = transform._gemini_client()
@@ -122,6 +203,11 @@ def write_card(page, recent, trend=None):
     if style.get("extra_rules"):
         prompt += ("\n\nPage-specific rules (they override the general rules above where they conflict):\n"
                    + style["extra_rules"])
+    if part and part.get("n") == 1:
+        prompt += PART1_RULES
+    elif part:
+        prompt += PART2_RULES.format(prev=part["prev"], plan=part["plan"])
+        trend = None  # Part 2 follows its Part 1, not this week's trends
     if trend:
         prompt += ("\n\nBuild THIS card on a topic that is trending in the niche this week: "
                    f"{trend['angle']}" + (f" (hook idea: {trend['hook']})" if trend.get("hook") else "")
@@ -151,6 +237,14 @@ def write_card(page, recent, trend=None):
         tags = tags.split()
     data["hashtags"] = [t if t.startswith("#") else f"#{t}" for t in tags][:5]
     data["model"] = used
+    if part:
+        data["_part"] = dict(part)
+        if part.get("n") == 1:
+            plan = clean(str(data.get("part2_plan") or "")).replace(";", ",")[:200]
+            if not plan:
+                data.pop("_part")  # no honest plan for Part 2: post it as a normal stand-alone post
+            else:
+                data["_part"]["plan"] = plan
     return data
 
 
@@ -533,7 +627,10 @@ def voice_text(page, card):
         parts.append(body)
     for b in card.get("bullets") or []:
         parts.append(clean(b).rstrip(".") + ".")
-    parts.append(page["image"].get("reel_outro") or f"Follow {page['brand']} for more.")
+    if card.get("_part", {}).get("n") == 1 and card.get("_part_cta"):
+        parts.append(card["_part_cta"])
+    else:
+        parts.append(page.get("follow_line") or page["image"].get("reel_outro") or f"Follow {page['brand']} for more.")
     return " ".join(parts)
 
 
@@ -604,6 +701,7 @@ def save_published(page, mp4, card, caption, video_id, rnote):
             "kind": "explainer" if str(rnote).startswith("explainer") else "photo_reel",
             "title": clean(card.get("headline", "")), "topic": clean(card.get("topic", "")),
             "type": card.get("type", ""), "series": card.get("_series", ""),
+            "part": (card.get("_part") or {}).get("n", 0),
             "caption": caption, "hashtags": card.get("hashtags", []),
             "sources": card.get("_sources", []), "fact_checked": bool(card.get("_fc")),
             "posted_at_utc": utcnow().isoformat(timespec="seconds"), "fb_video_id": video_id,
@@ -643,7 +741,12 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     hot = [t for t in fresh if t.get("priority")]  # breaking news: used at the next slot, no dice roll
     trend = hot[0] if hot else (
         random.choice(fresh) if fresh and (preview or random.random() < cfg.get("trend_share", 0.35)) else None)
-    card = write_card(page, recent, trend)
+    part = pick_part(cfg, page, mine, now, preview)
+    card = write_card(page, recent, trend, part)
+    if card.get("_part"):
+        card["_part_cta"] = part_text(cfg, page, card, "cta")
+        card["_part_screen"] = part_text(cfg, page, card, "cta_screen")
+        log(f"[{page['key']}] two-part series: Part {card['_part']['n']} ({card['_part'].get('plan', '')[:80]})")
     if trend and trend.get("facts"):
         card["_facts"] = trend["facts"]
     series = (cfg.get("series") or {}).get(page["key"])
@@ -699,6 +802,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                 log(f"[{page['key']}] preview reel: {link}")
         return
     message = card["caption"].strip() + ("\n\n" + " ".join(card["hashtags"]) if card["hashtags"] else "")
+    message = part_caption(cfg, page, card, message)
     try:
         post_id, note = "", ""
         if not photo_posts_on(cfg, page):
@@ -709,6 +813,7 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
                 rmsg, rnote = make_reel(page, card, out, mp4, rows)
                 if rmsg and card.get("_series") and not rmsg.startswith(card["_series"]):
                     rmsg = f"{card['_series']}: {rmsg}"
+                rmsg = part_caption(cfg, page, card, rmsg)
                 vid, state = publish_reel(page_id, token, mp4, rmsg or message, cfg["graph_api_version"])
                 post_id = vid
                 note = f"text {card['model']}; reel-only {state} ({rnote})"
@@ -736,6 +841,10 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
             note += f"; trend:{trend['angle'][:40]}"
         if card.get("_series"):
             note += f"; series:{card['_series']}"
+        if card.get("_part", {}).get("n") == 1:
+            note += f"; part1:{card['_part']['plan']}"
+        elif card.get("_part"):
+            note += f"; part2of:{card['_part']['id']}"
         if card.get("_fc"):
             note += f"; {card['_fc']}"
     except Exception as exc:

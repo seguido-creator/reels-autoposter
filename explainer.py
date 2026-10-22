@@ -138,6 +138,15 @@ def write_script(page, card):
     if card.get("_facts"):
         details += ("\nVerified facts (use ONLY these numbers/claims; attribute claims that are not settled fact, "
                     "e.g. a company's own figures, to their source): " + card["_facts"])
+    part = card.get("_part") or {}
+    if part.get("n") == 1:
+        details += ("\nThis Reel is PART 1 of 2 (Part 2 posts tomorrow). Deliver a real, satisfying answer, then set up "
+                    f"Part 2 honestly; do not reveal what Part 2 covers: {part.get('plan', '')}. Do not say 'Part 1' "
+                    "or 'follow'; those lines are added automatically.")
+    elif part.get("n") == 2:
+        details += (f"\nThis Reel is PART 2 of 2. Part 1 was: \"{part.get('prev', '')}\". Open with a one-line recap of "
+                    "Part 1 so new viewers follow along, then deliver the promised reveal. Do not say 'Part 2' or "
+                    "'follow'; those lines are added automatically.")
     if card.get("_issues"):
         details += ("\nA fact-checker rejected the previous draft for these reasons - fix every one: "
                     + "; ".join(map(str, card["_issues"])))
@@ -434,7 +443,7 @@ def render(page, script, clips, out_path, clip_paths=None):
     vf = (counter + f"drawtext=fontfile={transform.FONT}:textfile={hook}:expansion=none:fontsize=82:"
           f"fontcolor={_hex(on_acc)}:line_spacing=16:box=1:boxcolor={_hex(th['accent'])}@0.94:"
           "boxborderw=30:x=(w-text_w)/2:y=330:enable='lt(t,3.2)',"
-          f"subtitles={caps}" + transform._brand(page) + transform._follow(page, work, total))
+          f"subtitles={caps}" + transform._brand(page) + transform._follow(dict(page, follow_cta=script.get("_outro") or page.get("follow_cta")), work, total))
     transform._run(["ffmpeg", "-y", "-v", "error", "-i", str(joined), "-i", str(wav),
                     "-filter_complex",
                     f"[0:v]{vf}[v];[1:a]adelay={int(lead * 1000)}|{int(lead * 1000)},"
@@ -486,7 +495,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
     props = {
         "total": round(total, 3), "lead": lead, "video": "joined.mp4", "audio": "vo.wav",
         "hook": str(script["hook"]), "brand": brand, "monogram": mono,
-        "outro": str(page.get("follow_cta") or page["image"].get("footer") or "Follow for more"), "totalN": int(script.get("total") or 0),
+        "outro": str(script.get("_outro") or page.get("follow_cta") or page["image"].get("footer") or "Follow for more"), "totalN": int(script.get("total") or 0),
         "scenes": scenes, "words": words,
         "intro": page["image"].get("reel_intro") or "pill", "rec": bool(page["image"].get("rec_zoom")),
         "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
@@ -507,6 +516,24 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
         raise RuntimeError((r.stderr or r.stdout or "no output")[-600:])
 
 
+def follow_up(page, script, card):
+    """A clear reason to follow, spoken at the very end and shown on screen in the last 2 seconds.
+    Part 1 of a two-part story ends with 'Part 2 is tomorrow, follow so you don't miss it'."""
+    part = card.get("_part") or {}
+    if part.get("n") in (1, 2) and script.get("hook") and not str(script["hook"]).lower().startswith("part"):
+        script["hook"] = f"Part {part['n']}: {script['hook']}"
+    if part.get("n") == 1 and card.get("_part_cta"):
+        line, screen = card["_part_cta"], card.get("_part_screen") or card["_part_cta"]
+    else:
+        line = str(page.get("follow_line") or "").strip()
+        screen = str(page.get("follow_cta") or "").strip()
+    if line and script.get("scenes"):
+        last = script["scenes"][-1]
+        last["vo"] = str(last["vo"]).rstrip() + " " + line
+    if screen:
+        script["_outro"] = screen
+
+
 def make(page, card, out_path, used_ids=()):
     """Script -> clips -> video. Returns (seconds, caption_message, [clip ids])."""
     script = write_script(page, card)
@@ -518,6 +545,7 @@ def make(page, card, out_path, used_ids=()):
             res = factcheck.check_script(page, script, card)
             if res is not True:
                 raise RuntimeError("script failed fact-check twice: " + "; ".join(map(str, res))[:300])
+    follow_up(page, script, card)
     clips = find_clips(page, script["scenes"], used_ids)
     secs = render(page, script, clips, out_path)
     tags = script.get("hashtags") or []

@@ -32,7 +32,8 @@
         "21:30"
       ],
       "brand": "Throttle Decoded",
-      "follow_cta": "Follow Throttle Decoded for daily car facts",
+      "follow_cta": "Follow for one car fact a day",
+      "follow_line": "Follow Throttle Decoded for one car fact most drivers don't know, every day.",
       "voice": "Charon",
       "voice_style": "confident, energetic car-guy storyteller, clear and punchy",
       "audience": "Viewers in the United States, mostly 18-45, scrolling Facebook Reels for quick entertainment.",
@@ -96,7 +97,8 @@
         "21:30"
       ],
       "brand": "Stay Decoded",
-      "follow_cta": "Follow Stay Decoded for more travel secrets",
+      "follow_cta": "Follow for daily travel secrets",
+      "follow_line": "Follow Stay Decoded for hotel and travel secrets, every day.",
       "voice": "Kore",
       "voice_style": "warm, clear and confident, easy to understand",
       "audience": "Residents of the UAE, a very diverse expat-heavy audience (South Asian, Filipino, Arab, Western). Keep it respectful of local culture: no alcohol, no religious jokes, nothing political or suggestive.",
@@ -162,7 +164,8 @@
         "21:30"
       ],
       "brand": "Alaga Explained",
-      "follow_cta": "I-follow ang Alaga Explained para sa daily pet tips",
+      "follow_cta": "I-follow para sa daily pet tips",
+      "follow_line": "I-follow ang Alaga Explained para sa daily tips para sa alaga mo.",
       "voice": "Aoede",
       "voice_style": "masaya, friendly and natural, like a Filipino vlogger talking to barkada",
       "audience": "Filipino viewers in the Philippines, all ages, who love relatable, funny and heartwarming content.",
@@ -222,7 +225,8 @@
       "token_env": "FB_TOKEN_PAWS",
       "timezone": "America/New_York",
       "brand": "Pawside Giggles",
-      "follow_cta": "Follow Pawside Giggles for more pet facts",
+      "follow_cta": "Follow for a pet fact a day",
+      "follow_line": "Follow Pawside Giggles for a fun pet fact every day.",
       "audience": "Pet lovers in the US, UK, Canada and Australia, all ages, who enjoy funny and heartwarming dog and cat content.",
       "language": "Warm, playful, simple American English.",
       "image": {
@@ -277,7 +281,8 @@
       "token_env": "FB_TOKEN_DEM",
       "timezone": "America/New_York",
       "brand": "Navigating Dementia Together",
-      "follow_cta": "Follow for more gentle caregiving tips",
+      "follow_cta": "You're not alone. Follow for daily tips",
+      "follow_line": "You're not alone. Follow Navigating Dementia Together for gentle caregiving tips every day.",
       "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
       "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
       "image": {
@@ -332,7 +337,8 @@
       "token_env": "FB_TOKEN_FIN",
       "timezone": "Asia/Manila",
       "brand": "Pera Decoded",
-      "follow_cta": "Follow Pera Decoded para sa money tips, kabayan",
+      "follow_cta": "I-follow para sa daily money tips",
+      "follow_line": "I-follow ang Pera Decoded para sa daily money tips, kabayan.",
       "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
       "language": "Simple English with a light, natural Taglish touch. Friendly 'kabayan' tone.",
       "image": {
@@ -390,7 +396,8 @@
       "token_env": "FB_TOKEN_HOME",
       "timezone": "Asia/Dubai",
       "brand": "Home Hacks Decoded",
-      "follow_cta": "Follow Home Hacks Decoded for more home hacks",
+      "follow_cta": "Follow for one home hack a day",
+      "follow_line": "Follow Home Hacks Decoded for one easy home hack every day.",
       "audience": "Renters and homeowners in the UAE and worldwide (lots of expats in apartments) who like simple cleaning, organising, small-space and moving hacks.",
       "language": "Simple, clear international English.",
       "image": {
@@ -446,7 +453,8 @@
       "token_env": "FB_TOKEN_HIST",
       "timezone": "America/New_York",
       "brand": "History Decoded",
-      "follow_cta": "Follow History Decoded for more history",
+      "follow_cta": "Follow for daily 'older than you think' facts",
+      "follow_line": "Follow History Decoded for one 'older than you think' fact every day.",
       "audience": "History lovers in the US, UK, Canada and Australia, adults of all ages, curious about how world events connect across time.",
       "language": "Clear, vivid, conversational American English, like a great storyteller.",
       "image": {
@@ -538,6 +546,17 @@
       1,
       15
     ]
+  },
+  "two_part": {
+    "enabled": true,
+    "share": 0.2,
+    "gap_hours": 18,
+    "max_wait_days": 4,
+    "skip_pages": [],
+    "cta_en": "Part 2 is tomorrow. Follow {brand} so you don't miss it.",
+    "cta_en_screen": "Part 2 tomorrow - follow so you don't miss it",
+    "cta_tl": "Part 2 bukas. I-follow ang {brand} para hindi mo ma-miss.",
+    "cta_tl_screen": "Part 2 bukas - i-follow para di ma-miss"
   },
   "series": {
     "US": {

@@ -4,6 +4,11 @@ Once a day (first runner check after 03:00 UTC) every post from the last 21 days
 24 hours old gets its numbers from Facebook (plays/reach, reactions, comments, shares) and is written
 to the "Performance" tab of the Google Sheet (one row per post, refreshed while the post is young).
 
+Followers matter more than likes: once a day each Page's follower count is saved to the "Followers"
+tab, and each day's new followers are shared out over the posts that were live in that period (in
+proportion to their views). That estimate ("est_follows") weighs heavily in the score, so topics that
+win followers are preferred over topics that only win likes.
+
 images.py then reads the best and worst topics per page (perf_hint) and tells the AI to lean toward
 what audiences actually rewarded and away from what flopped. Nothing is ever posted from here.
 
@@ -18,7 +23,10 @@ from common import load_config, log, utcnow
 
 TAB = "Performance"
 HEADER = ["page", "post_id", "kind", "topic", "posted_at_utc", "plays", "reach", "reactions",
-          "comments", "shares", "score", "checked_at_utc"]
+          "comments", "shares", "score", "checked_at_utc", "est_follows"]
+FOL_TAB = "Followers"
+FOL_HEADER = ["date_utc", "page", "followers", "new_since_last", "checked_at_utc"]
+FOLLOW_WEIGHT = 15  # one new follower counts like ~2 shares
 DAYS = 21
 
 
@@ -95,14 +103,92 @@ def collect_posts(sheet, cfg):
     return posts
 
 
-def perf_tab(sheet):
+def _tab(sheet, name, header):
     try:
-        return sheet.worksheet(TAB)
+        ws = sheet.worksheet(name)
     except Exception:
-        ws = sheet.add_worksheet(title=TAB, rows=2, cols=len(HEADER))
-        ws.update(values=[HEADER], range_name="A1")
+        ws = sheet.add_worksheet(title=name, rows=2, cols=len(header))
+        ws.update(values=[header], range_name="A1")
         ws.freeze(rows=1)
         return ws
+    first = ws.row_values(1)
+    if first != header and first == header[:len(first)]:  # a column was added in a newer version
+        if ws.col_count < len(header):
+            ws.add_cols(len(header) - ws.col_count)
+        ws.update(values=[header], range_name="A1")
+    return ws
+
+
+def perf_tab(sheet):
+    return _tab(sheet, TAB, HEADER)
+
+
+def _when(x):
+    try:
+        return dt.datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def follower_snapshot(cfg, sheet):
+    """Saves today's follower count per Page (once a day). Returns all snapshot rows (dicts), oldest first."""
+    ws = _tab(sheet, FOL_TAB, FOL_HEADER)
+    rows = ws.get_all_records()
+    today = utcnow().strftime("%Y-%m-%d")
+    have = {(str(r.get("date_utc")), r.get("page")) for r in rows}
+    last = {}
+    for r in rows:
+        last[r.get("page")] = r.get("followers")
+    new = []
+    for page in cfg["pages"] + cfg.get("image_pages", []):
+        key = page["key"]
+        token = os.environ.get(page["token_env"], "").strip()
+        page_id = os.environ.get(page["page_id_env"], "").strip()
+        if (today, key) in have or not token or not page_id:
+            continue
+        j = _get(f"https://graph.facebook.com/{cfg['graph_api_version']}/{page_id}",
+                 {"access_token": token, "fields": "followers_count,fan_count"})
+        n = j.get("followers_count", j.get("fan_count"))
+        if n is None:
+            log(f"analytics: no follower count for {key}")
+            continue
+        prev = last.get(key)
+        gain = int(n) - int(prev) if str(prev).strip().lstrip("-").isdigit() else ""
+        new.append([today, key, int(n), gain, utcnow().isoformat(timespec="seconds")])
+    if new:
+        ws.append_rows(new, value_input_option="RAW")
+        log("analytics: followers " + ", ".join(f"{r[1]} {r[2]} ({'+' if str(r[3]).isdigit() else ''}{r[3]})"
+                                                for r in new))
+    return rows + [dict(zip(FOL_HEADER, r)) for r in new]
+
+
+def estimate_follows(posts, snaps):
+    """posts: list of dicts with page, when (datetime), plays/reach. Adds p['est_follows'].
+    Each snapshot interval's new followers are split over that Page's posts published from 24h before the
+    interval to its end (a post keeps pulling in followers for about a day), weighted by views."""
+    for p in posts:
+        p["est_follows"] = 0.0
+    by_page = {}
+    for r in snaps:
+        t = _when(r.get("checked_at_utc"))
+        if t:
+            by_page.setdefault(r.get("page"), []).append((t, r.get("new_since_last")))
+    for page, pts in by_page.items():
+        pts.sort(key=lambda x: x[0])
+        for (t0, _), (t1, gain) in zip(pts, pts[1:]):
+            try:
+                gain = float(gain)
+            except (TypeError, ValueError):
+                continue
+            if gain <= 0:
+                continue
+            live = [p for p in posts if p["page"] == page and t0 - dt.timedelta(hours=24) <= p["when"] < t1]
+            weight = sum((p["plays"] or p["reach"]) for p in live)
+            for p in live:
+                share = ((p["plays"] or p["reach"]) / weight) if weight else 1 / len(live)
+                p["est_follows"] += gain * share
+    for p in posts:
+        p["est_follows"] = round(p["est_follows"], 1)
 
 
 def refresh(cfg, sheet, force=False):
@@ -113,7 +199,12 @@ def refresh(cfg, sheet, force=False):
         return
     pages = {p["key"]: p for p in cfg["pages"] + cfg.get("image_pages", [])}
     old = {r[1]: i for i, r in enumerate(rows[1:], start=2) if len(r) > 1}
-    new_rows, updates = [], []
+    try:
+        snaps = follower_snapshot(cfg, sheet)
+    except Exception as exc:
+        log(f"analytics: follower snapshot failed: {str(exc)[:120]}")
+        snaps = []
+    posts = []
     for page_key, pid, kind, topic, when in collect_posts(sheet, cfg):
         page = pages.get(page_key)
         token = os.environ.get(page["token_env"], "").strip() if page else ""
@@ -121,10 +212,15 @@ def refresh(cfg, sheet, force=False):
             continue
         is_video = "_" not in pid
         n = post_numbers(cfg["graph_api_version"], pid, token, is_video)
-        row = [page_key, pid, kind, topic, when, n["plays"], n["reach"], n["reactions"], n["comments"],
-               n["shares"], n["score"], utcnow().isoformat(timespec="seconds")]
-        if pid in old:
-            updates.append({"range": f"A{old[pid]}:L{old[pid]}", "values": [row]})
+        posts.append(dict(n, page=page_key, pid=pid, kind=kind, topic=topic, posted=when, when=_when(when)))
+    estimate_follows(posts, snaps)
+    new_rows, updates = [], []
+    for n in posts:
+        n["score"] = round(n["score"] + FOLLOW_WEIGHT * n["est_follows"], 1)
+        row = [n["page"], n["pid"], n["kind"], n["topic"], n["posted"], n["plays"], n["reach"], n["reactions"],
+               n["comments"], n["shares"], n["score"], utcnow().isoformat(timespec="seconds"), n["est_follows"]]
+        if n["pid"] in old:
+            updates.append({"range": f"A{old[n['pid']]}:M{old[n['pid']]}", "values": [row]})
         else:
             new_rows.append(row)
     if updates:
@@ -145,8 +241,18 @@ def perf_hint(sheet, page_key, n=5):
     rows.sort(key=lambda r: float(r.get("score") or 0), reverse=True)
     top = [f"{r['topic']} ({r['kind']}, score {r['score']})" for r in rows[:n]]
     low = [r["topic"] for r in rows[-n:]]
-    return ("What this Page's audience actually rewarded recently (most shares/comments/views first):\n"
-            + "\n".join(f"- {t}" for t in top)
+    num = lambda r, k: float(r.get(k) or 0) if str(r.get(k) or "0").replace(".", "", 1).isdigit() else 0.0
+    follows = sum(num(r, "est_follows") for r in rows)
+    views = sum(num(r, "plays") or num(r, "reach") for r in rows)
+    winners = sorted((r for r in rows if num(r, "est_follows") > 0), key=lambda r: num(r, "est_follows"),
+                     reverse=True)[:3]
+    fol = ""
+    if views and follows:
+        fol = (f"\nFollowers: about {follows / views * 1000:.1f} new followers per 1,000 views recently. "
+               "Topics that brought the most NEW FOLLOWERS (more valuable than likes): "
+               + "; ".join(str(r["topic"]) for r in winners) + ".")
+    return ("What this Page's audience actually rewarded recently (followers, shares, comments, views first):\n"
+            + "\n".join(f"- {t}" for t in top) + fol
             + "\nWhat got little response:\n" + "\n".join(f"- {t}" for t in low)
             + "\nLean toward the kind of topics, angles and hooks that won, without repeating those exact "
               "topics. Avoid the patterns of the weak ones.")
