@@ -286,7 +286,7 @@ def find_clips(page, scenes, used_ids, still=None):
                 continue
         looks = 0
         for q in _queries(sc["search"], fallback):
-            want = [w.lower() for w in q.split() if len(w) > 3 and w.lower() not in GENERIC] or \
+            want = [w.lower() for w in q.split() if len(w) > 2 and w.lower() not in GENERIC] or \
                    [w.lower() for w in q.split()]
             cands = [h for h in (_pixabay_videos(q, pkey) if pkey else []) + _pexels_videos(q, xkey)
                      if h["id"] not in taken and _relevant(h.get("tags", ""), want, must)]
@@ -297,13 +297,15 @@ def find_clips(page, scenes, used_ids, still=None):
             random.shuffle(pool)
             for h in pool[:3]:
                 looks += 1
-                if _shows(h, [str(sc["search"])]):  # judged against the whole scene, not the broader query
+                if _fits(h, str(sc["search"])):  # judged against the scene, not the broader query
                     hit = h
                     break
                 if looks >= MAX_LOOKS:
                     break
             if hit or looks >= MAX_LOOKS:
                 break
+        log(f"[{page['key']}] clip for '{sc['search']}': " + (f"{hit['id']} after {looks} look(s)" if hit
+                                                              else f"none fitted ({looks} looked at)"))
         if not hit and still and stills < MAX_STILLS:
             stills += 1
             hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
@@ -416,6 +418,33 @@ def _shows(hit, subject, local=None):
         return "YES" in (resp.text or "").upper()
     except Exception as exc:
         log(f"thumbnail check skipped ({str(exc)[:80]})")
+        return True
+
+
+FIT_PROMPT = """This is a thumbnail of a stock video clip. The clip is for a scene described as: "{scene}".
+Does the clip clearly show the MAIN SUBJECT of that description (the thing or animal a viewer must see, e.g. the
+dog, the car, the mop, the air conditioner)? The exact action, angle or setting may differ. Answer NO if the main
+subject is missing or it is mainly something unrelated (another animal, a random street, a person exercising).
+Answer only YES or NO."""
+
+
+def _fits(hit, scene):
+    """Lenient but honest visual check for a stock clip: main subject visible. Errors -> True."""
+    import requests
+    import transform
+    from google.genai import types
+    thumb = (hit.get("videos") or {}).get("medium", {}).get("thumbnail")
+    if not thumb:
+        return True
+    try:
+        img = requests.get(thumb, timeout=20)
+        img.raise_for_status()
+        resp, _ = transform.generate(transform._gemini_client(), [
+            types.Part.from_bytes(data=img.content, mime_type="image/jpeg"), FIT_PROMPT.format(scene=scene)],
+            types.GenerateContentConfig(temperature=0))
+        return "YES" in (resp.text or "").upper()
+    except Exception as exc:
+        log(f"clip check skipped ({str(exc)[:80]})")
         return True
 
 
