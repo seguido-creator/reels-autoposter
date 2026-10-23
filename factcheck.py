@@ -144,6 +144,8 @@ def check_card(page, card):
 def check_script(page, script, card):
     """True if the explainer voice-over passes; otherwise returns the list of issues."""
     text = (str(script.get("hook", "")) + "\n" + " ".join(str(s.get("vo", "")) for s in script.get("scenes", []))
-            + "\n" + str(script.get("caption", "")))
+            + "\n" + str(script.get("caption", ""))
+            + ("\nOn-screen timeline: " + "; ".join(f"{t['year']}: {t['label']}" for t in script["timeline"])
+               if script.get("timeline") else ""))
     res = check(page, text, [str(card.get("topic", "")), str(card.get("headline", ""))])
     return True if res["verdict"] == "pass" else (res.get("issues") or ["details could not be verified"])

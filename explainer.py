@@ -48,7 +48,7 @@ Return JSON with exactly these keys:
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
 {subject_rule}
-{commons_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
+{commons_field}{timeline_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
 
 TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof by logic):
@@ -66,6 +66,12 @@ COMMONS_FIELD = """    "commons": (optional) when the scene names a specific fam
               ancient artifact that is public domain (e.g. "The Starry Night Van Gogh", "Mona Lisa",
               "Rosetta Stone", "1889 Eiffel Tower photograph"), its exact name for a Wikimedia Commons search;
               otherwise "". Use it for at most half of the scenes.
+"""
+
+TIMELINE_FIELD = """"timeline": a list for an animated timeline shown at the end, used when the video compares WHEN things
+              happened: 2 to 5 objects in chronological order, each {"year": "1096" or "around 1325" or "1500s" (max 14
+              characters), "label": "max 4 words"}. Every year must match the voice-over exactly. [] if the video is not
+              about dates.
 """
 
 HOOK_RULES = """
@@ -168,7 +174,8 @@ def write_script(page, card):
                            else "4 to 6",
                            num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
                            if as_list else "",
-                           commons_field=COMMONS_FIELD if page["image"].get("commons") else "")
+                           commons_field=COMMONS_FIELD if page["image"].get("commons") else "",
+                           timeline_field=TIMELINE_FIELD if page["image"].get("timeline") else "")
     for _ in range(3):
         resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
             response_mime_type="application/json", temperature=0.8))
@@ -187,12 +194,25 @@ def write_script(page, card):
                 log(f"[{page['key']}] explainer script without a usable hook, asking again")
                 continue
             data["total"] = n if as_list else 0
+            data["timeline"] = clean_timeline(data.get("timeline")) if page["image"].get("timeline") else []
             if not as_list:
                 for sc in scenes:
                     sc.pop("num", None)
             return data
         log(f"[{page['key']}] explainer script incomplete, asking again")
     raise RuntimeError("explainer script missing scenes")
+
+
+def clean_timeline(items):
+    """2-5 short {year, label} items for the animated end timeline; anything malformed drops the timeline."""
+    out = []
+    for it in items if isinstance(items, list) else []:
+        if not isinstance(it, dict):
+            continue
+        year, label = str(it.get("year") or "").strip(), str(it.get("label") or "").strip()
+        if year and label and len(year) <= 14:
+            out.append({"year": year, "label": " ".join(label.split()[:5])[:32]})
+    return out if 2 <= len(out) <= 5 else []
 
 
 def use_list(page, card):
@@ -593,6 +613,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
         "outro": str(script.get("_outro") or page.get("follow_cta") or page["image"].get("footer") or "Follow for more"), "totalN": int(script.get("total") or 0),
         "scenes": scenes, "words": words,
         "intro": page["image"].get("reel_intro") or "pill", "rec": bool(page["image"].get("rec_zoom")),
+        "timeline": script.get("timeline") or [],
         "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
                   "bgTop": th.get("bg_top", "#111111"), "bgBottom": th.get("bg_bottom", "#000000"),
                   "text": th.get("text", "#FFFFFF"), "titleFont": "title.ttf", "bodyFont": "body.ttf",

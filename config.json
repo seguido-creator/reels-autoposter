@@ -500,6 +500,7 @@
         "reel_subject": "",
         "fact_check": true,
         "commons": true,
+        "timeline": true,
         "reel_intro": "magazine",
         "rec_zoom": true
       },
