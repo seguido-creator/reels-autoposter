@@ -55,21 +55,23 @@ def post_numbers(api, obj_id, token, is_video):
     out["reactions"] = int(((j.get("reactions") or {}).get("summary") or {}).get("total_count") or 0)
     out["comments"] = int(((j.get("comments") or {}).get("summary") or {}).get("total_count") or 0)
     out["shares"] = int((j.get("shares") or {}).get("count") or 0)
-    if is_video:
-        for metric, key in (("blue_reels_play_count", "plays"), ("post_impressions_unique", "reach")):
-            j = _get(base + "/video_insights", {"access_token": token, "metric": metric})
+    # Meta retired post_impressions* in 2025; its replacements are post_total_media_view_unique (people
+    # reached) and post_media_view (views). Each metric is tried in order until one answers.
+    def first(edge, metrics):
+        for metric in metrics:
+            j = _get(base + edge, {"access_token": token, "metric": metric})
             vals = (j.get("data") or [{}])[0].get("values") or [{}]
-            try:
-                out[key] = int(vals[0].get("value") or 0)
-            except (TypeError, ValueError):
-                pass
+            if j.get("data"):
+                try:
+                    return int(vals[0].get("value") or 0)
+                except (TypeError, ValueError):
+                    return 0
+        return 0
+    if is_video:
+        out["plays"] = first("/video_insights", ["blue_reels_play_count", "total_video_views"])
+        out["reach"] = first("/video_insights", ["post_total_media_view_unique", "total_video_impressions_unique"])
     else:
-        j = _get(base + "/insights", {"access_token": token, "metric": "post_impressions_unique"})
-        vals = (j.get("data") or [{}])[0].get("values") or [{}]
-        try:
-            out["reach"] = int(vals[0].get("value") or 0)
-        except (TypeError, ValueError):
-            pass
+        out["reach"] = first("/insights", ["post_total_media_view_unique", "post_media_view"])
     # one number to rank posts within a page: shares and comments say "people cared" the most
     seen = out["plays"] or out["reach"]
     out["score"] = round(seen / 100 + out["reactions"] + 4 * out["comments"] + 8 * out["shares"], 1)
