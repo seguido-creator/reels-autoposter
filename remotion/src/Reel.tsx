@@ -18,8 +18,9 @@ export type ReelProps = {
   total: number; lead: number; video: string; audio: string;
   hook: string; brand: string; monogram: string; outro: string;
   totalN: number; scenes: Scene[]; words: Word[]; theme: Theme;
-  intro?: "pill" | "magazine"; rec?: boolean;
+  intro?: "pill" | "magazine"; rec?: boolean; timeline?: TimeItem[];
 };
+export type TimeItem = { year: string; label: string };
 
 export const defaultProps: ReelProps = {
   total: 10, lead: 0.3, video: "joined.mp4", audio: "vo.wav", hook: "Hook", brand: "Brand",
@@ -180,6 +181,52 @@ const Counter: React.FC<{ sc: Scene; p: ReelProps }> = ({ sc, p }) => {
   );
 };
 
+// Animated timeline (History Decoded): dates drop in one by one on a growing vertical line,
+// shown over the last scene so viewers SEE how events line up in time.
+const Timeline: React.FC<{ p: ReelProps; len: number }> = ({ p, len }) => {
+  const f = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const items = p.timeline || [];
+  const n = items.length;
+  const step = Math.max(10, Math.floor((len * 0.65) / Math.max(n, 1)));
+  const inS = spring({ frame: f, fps, config: { damping: 18 } });
+  const out = interpolate(f, [len - 8, len], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const rowH = n > 4 ? 170 : 200;
+  const lineLen = interpolate(f, [6, 6 + step * n], [0, (n - 1) * rowH + 40], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return (
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: out, paddingBottom: 300 }}>
+      <div style={{ position: "relative", width: 900, padding: "60px 50px 70px 50px", borderRadius: 34,
+        background: `linear-gradient(180deg, ${p.theme.bgTop}eb, ${p.theme.bgBottom}f0)`,
+        boxShadow: "0 30px 80px rgba(0,0,0,.55)", transform: `scale(${0.9 + 0.1 * inS})`, opacity: inS }}>
+        <div style={{ fontFamily: "Body", fontSize: 34, letterSpacing: 6, color: p.theme.accent, marginBottom: 34,
+          textAlign: "center" }}>{p.theme.upper ? "SIDE BY SIDE IN TIME" : "Side by side in time"}</div>
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", left: 38, top: 20, width: 8, height: lineLen, borderRadius: 4,
+            background: p.theme.accent }} />
+          {items.map((it, i) => {
+            const s = spring({ frame: f - 6 - i * step, fps, config: { damping: 13, stiffness: 160 } });
+            return (
+              <div key={i} style={{ position: "relative", height: rowH, display: "flex", alignItems: "flex-start",
+                opacity: s, transform: `translateX(${(1 - s) * 80}px)` }}>
+                <div style={{ width: 84, display: "flex", justifyContent: "center", paddingTop: 10 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 21, background: p.theme.accent,
+                    border: `6px solid ${p.theme.text}`, transform: `scale(${s})` }} />
+                </div>
+                <div style={{ paddingLeft: 26 }}>
+                  <div style={{ fontFamily: "Title", fontSize: it.year.length > 8 ? 70 : 88, lineHeight: 1,
+                    color: p.theme.accent }}>{it.year}</div>
+                  <div style={{ fontFamily: "Body", fontSize: 48, lineHeight: 1.15, color: p.theme.text,
+                    marginTop: 8 }}>{it.label}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 const KeyFlash: React.FC<{ sc: Scene; p: ReelProps }> = ({ sc, p }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -255,6 +302,11 @@ export const Reel: React.FC<ReelProps> = (p) => {
   const zoom = p.rec ? 1 + Math.max(0, ...p.scenes.filter((sc) => sc.key).map((sc) =>
     interpolate(tt, [sc.start, sc.start + 0.35, sc.start + 1.4, sc.start + 1.8], [0, 0.08, 0.08, 0],
       { extrapolateLeft: "clamp", extrapolateRight: "clamp" }))) : 1;
+  const hasTimeline = (p.timeline || []).length >= 2 && p.scenes.length > 0;
+  const last = p.scenes[p.scenes.length - 1];
+  // over the last scene, but always on screen for at least ~4.5s before the outro
+  const tlStart = hasTimeline ? Math.max(3.4, Math.min(last.start + 0.2, p.total - outroLen - 4.5)) : 0;
+  const tlLen = hasTimeline ? Math.max(1, fr(p.total - outroLen) - fr(tlStart)) : 1;
   const fontFaces = `
 @font-face{font-family:Title;src:url(${staticFile(p.theme.titleFont)});}
 @font-face{font-family:Body;src:url(${staticFile(p.theme.bodyFont)});}`;
@@ -269,17 +321,19 @@ export const Reel: React.FC<ReelProps> = (p) => {
       <Sequence from={fr(p.lead)}><Audio src={staticFile(p.audio)} /></Sequence>
       <Sequence durationInFrames={fr(3.2)}>{p.intro === "magazine" ? <MagazineIntro p={p} /> : <Hook p={p} />}</Sequence>
       {p.rec ? <RecFrame p={p} /> : null}
-      {p.scenes.map((sc, i) => sc.num > 0 && p.totalN > 0 ? (
-        <Sequence key={`c${i}`} from={fr(sc.start)} durationInFrames={Math.max(1, fr(sc.end - sc.start))}>
+      {p.scenes.map((sc, i) => sc.num > 0 && p.totalN > 0 && !(hasTimeline && sc.start >= tlStart) ? (
+        <Sequence key={`c${i}`} from={fr(sc.start)} durationInFrames={Math.max(1, Math.min(fr(sc.end - sc.start),
+          hasTimeline ? fr(tlStart) - fr(sc.start) : 1e9))}>
           <Counter sc={sc} p={p} />
         </Sequence>
       ) : null)}
-      {p.scenes.map((sc, i) => sc.key && fr(sc.start) >= fr(3.2) ? (
+      {p.scenes.map((sc, i) => sc.key && fr(sc.start) >= fr(3.2) && !(hasTimeline && sc.end > tlStart) ? (
         <Sequence key={`k${i}`} from={fr(sc.start)} durationInFrames={Math.min(fr(1.6), Math.max(1, fr(sc.end - sc.start)))}>
           <KeyFlash sc={sc} p={p} />
         </Sequence>
       ) : null)}
-      <Checklist p={p} />
+      {hasTimeline ? <Sequence durationInFrames={Math.max(1, fr(tlStart))}><Checklist p={p} /></Sequence> : <Checklist p={p} />}
+      {hasTimeline ? <Sequence from={fr(tlStart)} durationInFrames={tlLen}><Timeline p={p} len={tlLen} /></Sequence> : null}
       <Captions p={p} />
       <Sequence from={fr(p.total - outroLen)}><Outro p={p} /></Sequence>
       <div style={{ position: "absolute", bottom: 150, width: "100%", textAlign: "center", fontFamily: "Body",
