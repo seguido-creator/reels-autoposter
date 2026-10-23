@@ -326,7 +326,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "elderly hands",
-        "reel_subject": "senior"
+        "reel_subject": ""
       },
       "voice": "Aoede",
       "voice_style": "gentle, calm and reassuring, warm and unhurried"
