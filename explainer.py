@@ -664,6 +664,7 @@ def make(page, card, out_path, used_ids=()):
     follow_up(page, script, card)
     clips = find_clips(page, script["scenes"], used_ids, card.get("_still"))
     secs = render(page, script, clips, out_path)
+    qa = video_qa(page, out_path, script, card)  # raises when the finished Reel must not be posted
     tags = script.get("hashtags") or []
     if isinstance(tags, str):
         tags = tags.split()
@@ -676,7 +677,63 @@ def make(page, card, out_path, used_ids=()):
     ref = lambda c: str(c["id"])
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
         f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
-    return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}"]
+    return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
+
+
+QA_PROMPT = """You are the final quality checker for a short faceless Reel on the Facebook Page "{brand}"
+(audience: {audience}). Watch the whole video and listen to it.
+
+The Reel is about: {headline}
+Spoken script: {script}
+Each scene was meant to show: {scenes}
+
+Report problems a viewer would notice. Severity "block" ONLY for:
+- two or more scenes whose footage is clearly unrelated to what is being said (e.g. a cat during an air-conditioner tip)
+- anything inappropriate for a family audience, violent, sexual or disturbing footage
+- footage that contradicts the voice-over in a misleading way
+- missing or garbled voice, long black or frozen sections
+- on-screen text that is badly misspelled, cut off or unreadable for more than a moment
+Everything else (one weak clip, small timing issues, a generic shot) is severity "minor".
+
+Return ONLY JSON: {{"verdict": "pass" or "block", "issues": [{{"severity": "block" or "minor", "what": "short description",
+"time": "approx seconds"}}]}}"""
+
+
+def video_qa(page, mp4, script, card):
+    """The QA agent: Gemini watches the finished Reel before it is posted. Returns "pass", "minor" or "skipped";
+    raises when it finds a blocking problem (the caller then posts the safer photo Reel instead)."""
+    if not page["image"].get("video_qa", True):
+        return "off"
+    import subprocess
+    import tempfile
+    import transform
+    from google.genai import types
+    small = Path(tempfile.mkdtemp(prefix="qa_")) / "qa.mp4"
+    try:
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(mp4), "-vf", "scale=432:768,fps=12",
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "32", "-c:a", "aac", "-b:a", "48k",
+                        str(small)], check=True, timeout=300)
+        if small.stat().st_size > 18 * 1024 * 1024:
+            return "skipped"
+        prompt = QA_PROMPT.format(
+            brand=page["brand"], audience=page.get("audience", ""), headline=card.get("headline", ""),
+            script=" ".join(str(s.get("vo", "")) for s in script.get("scenes", []))[:2500],
+            scenes=" | ".join(str(s.get("search", "")) for s in script.get("scenes", [])))
+        resp, _ = transform.generate(transform._gemini_client(), [
+            types.Part.from_bytes(data=small.read_bytes(), mime_type="video/mp4"), prompt],
+            types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
+        data = json.loads(resp.text or "{}")
+    except Exception as exc:
+        log(f"[{page['key']}] video QA skipped ({str(exc)[:120]})")
+        return "skipped"
+    issues = [i for i in (data.get("issues") or []) if isinstance(i, dict)]
+    blocking = [i for i in issues if str(i.get("severity", "")).lower() == "block"]
+    text = "; ".join(f"{i.get('severity')}: {i.get('what')} @{i.get('time', '?')}s" for i in issues)[:400]
+    if blocking or str(data.get("verdict", "")).lower() == "block":
+        log(f"[{page['key']}] video QA BLOCKED: {text}")
+        raise RuntimeError(f"video QA blocked: {text[:200]}")
+    log(f"[{page['key']}] video QA pass" + (f" ({text})" if text else ""))
+    return "minor" if issues else "pass"
 
 
 def contact_sheet(mp4, out_png, small_mp4=None):

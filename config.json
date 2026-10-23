@@ -548,6 +548,12 @@
       15
     ]
   },
+  "inbox": {
+    "enabled": true,
+    "post_window_hours": 72,
+    "max_comment_age_hours": 72,
+    "max_replies_per_page_per_run": 12
+  },
   "two_part": {
     "enabled": true,
     "share": 0.2,

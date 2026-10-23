@@ -1,6 +1,6 @@
 """Performance feedback loop.
 
-Once a day (first runner check after 03:00 UTC) every post from the last 21 days that is at least
+Once a day (first runner check from 03:00 UTC on) every post from the last 21 days that is at least
 24 hours old gets its numbers from Facebook (plays/reach, reactions, comments, shares) and is written
 to the "Performance" tab of the Google Sheet (one row per post, refreshed while the post is young).
 
@@ -30,10 +30,17 @@ FOLLOW_WEIGHT = 15  # one new follower counts like ~2 shares
 DAYS = 21
 
 
+_ERRORS = []
+
+
 def _get(url, params):
     import requests
     try:
         r = requests.get(url, params=params, timeout=30)
+        if not r.ok and len(_ERRORS) < 4:  # show the first few refusals so zeros can be explained
+            _ERRORS.append(1)
+            log(f"analytics: Facebook refused {url.split('/')[-1][:40]} {params.get('metric') or params.get('fields', '')[:40]}: "
+                f"{r.status_code} {r.text[:160]}")
         return r.json() if r.ok else {}
     except Exception:
         return {}
@@ -262,7 +269,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
-    if not args.force and utcnow().hour != 3:
+    if not args.force and utcnow().hour < 3:  # once a day, from 03:00 UTC on (refresh() skips if already done today)
         return
     if not os.environ.get("GOOGLE_REFRESH_TOKEN", "").strip():
         return
