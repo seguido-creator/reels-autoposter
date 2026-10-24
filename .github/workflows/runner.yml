@@ -36,6 +36,7 @@ jobs:
       GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
       PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
       GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
       TTS_MODEL: ${{ vars.TTS_MODEL }}
       FB_PAGE_ID_US: ${{ secrets.FB_PAGE_ID_US }}
@@ -92,6 +93,7 @@ jobs:
               python community.py || { echo "::warning::community failed"; fails=$((fails+1)); }
               python inbox.py || echo "::warning::inbox failed"
               python analytics.py || echo "::warning::analytics failed"
+              python signals.py || echo "::warning::signals failed"
             fi
             echo "::endgroup::"
             now=$(date +%s)
