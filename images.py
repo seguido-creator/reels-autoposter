@@ -200,6 +200,8 @@ def write_card(page, recent, trend=None, part=None):
         recent="\n".join(f"- {t}" for t in recent[-40:]) or "- (none yet)")
     if page.get("_perf"):
         prompt += "\n\n" + page["_perf"]
+    if page.get("_signals") and not part:
+        prompt += "\n\n" + page["_signals"]
     if style.get("extra_rules"):
         prompt += ("\n\nPage-specific rules (they override the general rules above where they conflict):\n"
                    + style["extra_rules"])
@@ -890,11 +892,19 @@ def main():
     sheet = open_sheet(creds)
     ws = log_sheet(sheet)
     rows = ws.get_all_records(expected_headers=LOG_HEADER) if ws.row_count > 1 else []
-    trends = latest_trends(drive_service(creds))
+    drive = drive_service(creds)
+    trends = latest_trends(drive)
+    try:
+        import signals
+        sig = signals.load(drive)
+    except Exception as exc:
+        log(f"signals skipped: {str(exc)[:100]}")
+        sig = {}
     for page in all_pages(cfg):
         if only and page["key"].upper() != only:
             continue
         page["_trends"] = trends.get(page["key"].upper(), [])
+        page["_signals"] = signals.hint(sig.get(page["key"].upper(), [])) if sig else ""
         try:
             import analytics
             page["_perf"] = analytics.perf_hint(sheet, page["key"]) if not args.preview else ""

@@ -71,6 +71,7 @@
         },
         "reel_mode": "explainer",
         "reel_fallback_query": "sports car road",
+        "signals_hashtags": ["carfacts", "cartok", "carsoftiktok"],
         "reel_days": [
           0,
           1,
@@ -138,6 +139,7 @@
         },
         "reel_mode": "explainer",
         "reel_fallback_query": "luxury hotel",
+        "signals_hashtags": ["luxuryhotel", "travelhacks", "hoteltips"],
         "reel_days": [
           0,
           1,
@@ -204,6 +206,7 @@
         },
         "reel_mode": "explainer",
         "reel_fallback_query": "dog cat",
+        "signals_hashtags": ["petsph", "asongpinoy", "pusangpinoy"],
         "reel_days": [
           0,
           1,
@@ -270,6 +273,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "dog cat pet",
+        "signals_hashtags": ["dogsoftiktok", "catsoftiktok", "funnypets"],
         "reel_subject": "dog"
       },
       "voice": "Puck",
@@ -326,6 +330,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "elderly hands",
+        "signals_hashtags": ["dementiacaregiver", "alzheimersawareness", "caregiving"],
         "reel_subject": ""
       },
       "voice": "Aoede",
@@ -385,6 +390,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "money coins",
+        "signals_hashtags": ["ofw", "ipontips", "personalfinanceph"],
         "reel_subject": ""
       },
       "voice": "Charon",
@@ -442,6 +448,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "clean home interior",
+        "signals_hashtags": ["cleaninghacks", "homehacks", "organizationhacks"],
         "reel_subject": ""
       },
       "voice": "Kore",
@@ -497,6 +504,7 @@
         "reel_all_slots": true,
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
+        "signals_hashtags": ["historyfacts", "historytok", "didyouknowhistory"],
         "reel_subject": "",
         "fact_check": true,
         "commons": true,
@@ -547,6 +555,12 @@
       1,
       15
     ]
+  },
+  "signals": {
+    "enabled": true,
+    "every_hours": 47,
+    "results_per_page": 12,
+    "max_age_days": 30
   },
   "inbox": {
     "enabled": true,
