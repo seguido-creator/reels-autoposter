@@ -60,7 +60,7 @@ def scrape(token, hashtag, n):
                             "shouldDownloadMusicCovers": False})
     if not r.ok:
         raise RuntimeError(f"{r.status_code} {r.text[:200]}")
-    items = r.json()
+    items = json.loads(r.content.decode("utf-8"))  # Apify sends no charset: decode as UTF-8 so emojis survive
     return items if isinstance(items, list) else []
 
 
@@ -86,13 +86,31 @@ def run(cfg, force=False):
         tags = (page.get("image") or {}).get("signals_hashtags") or []
         if not tags:
             continue
-        tag = tags[(day // 2) % len(tags)]
-        try:
-            items = scrape(token, tag, n)
-        except Exception as exc:
-            log(f"[{page['key']}] signals: Apify run failed for #{tag}: {str(exc)[:160]}")
-            continue
-        total += len(items)
+        first = (day // 2) % len(tags)
+        vids = []
+        for tag in [tags[(first + k) % len(tags)] for k in range(min(2, len(tags)))]:  # next hashtag if one is stale
+            try:
+                items = scrape(token, tag, n)
+            except Exception as exc:
+                log(f"[{page['key']}] signals: Apify run failed for #{tag}: {str(exc)[:160]}")
+                continue
+            total += len(items)
+            vids = recent_videos(items, tag, since)
+            if vids:
+                break
+        vids.sort(key=lambda v: v["plays"], reverse=True)
+        out[page["key"]] = vids[:8]
+        log(f"[{page['key']}] signals: #{tag} -> {len(vids)} recent videos, top {vids[0]['plays'] if vids else 0:,} views")
+    if not out:
+        return
+    path = Path(tempfile.mkdtemp()) / f"{PREFIX}{utcnow():%Y%m%d_%H%M}.json"
+    path.write_text(json.dumps({"source": "Apify TikTok Scraper", "made_at_utc": utcnow().isoformat(timespec="seconds"),
+                                "results_scraped": total, "pages": out}, ensure_ascii=False, indent=1), encoding="utf-8")
+    upload_render(drive, path, path.name, render_folder_id(drive), mime="application/json")
+    log(f"signals: saved {path.name} ({total} results scraped)")
+
+
+def recent_videos(items, tag, since):
         vids = []
         for it in items:
             if not isinstance(it, dict) or it.get("isAd") or it.get("isSponsored"):
@@ -108,16 +126,7 @@ def run(cfg, force=False):
                          "comments": int(it.get("commentCount") or 0), "shares": int(it.get("shareCount") or 0),
                          "url": it.get("webVideoUrl") or "", "created": str(it.get("createTimeISO") or "")[:10],
                          "seconds": int(((it.get("videoMeta") or {}).get("duration")) or 0)})
-        vids.sort(key=lambda v: v["plays"], reverse=True)
-        out[page["key"]] = vids[:8]
-        log(f"[{page['key']}] signals: #{tag} -> {len(vids)} recent videos, top {vids[0]['plays'] if vids else 0:,} views")
-    if not out:
-        return
-    path = Path(tempfile.mkdtemp()) / f"{PREFIX}{utcnow():%Y%m%d_%H%M}.json"
-    path.write_text(json.dumps({"source": "Apify TikTok Scraper", "made_at_utc": utcnow().isoformat(timespec="seconds"),
-                                "results_scraped": total, "pages": out}, ensure_ascii=False, indent=1), encoding="utf-8")
-    upload_render(drive, path, path.name, render_folder_id(drive), mime="application/json")
-    log(f"signals: saved {path.name} ({total} results scraped)")
+        return vids
 
 
 def hint(videos, k=5):
