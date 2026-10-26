@@ -161,7 +161,9 @@
       "token_env": "FB_TOKEN_PH",
       "timezone": "Asia/Manila",
       "slots": [
+        "09:00",
         "12:00",
+        "16:00",
         "19:30",
         "21:30"
       ],
@@ -345,7 +347,7 @@
       "follow_cta": "I-follow para sa daily money tips",
       "follow_line": "I-follow ang Pera Decoded para sa daily money tips, kabayan.",
       "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
-      "language": "Simple English with a light, natural Taglish touch. Friendly 'kabayan' tone.",
+      "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk and post on Facebook, like a friendly kabayan. Light, warm, relatable; keep money terms and numbers clear.",
       "image": {
         "slots": [
           "07:30",

@@ -267,6 +267,34 @@ def perf_hint(sheet, page_key, n=5):
               "topics. Avoid the patterns of the weak ones.")
 
 
+def hook_hint(sheet, page_key, min_posts=2):
+    """Which opening-hook styles (curiosity_gap, myth_bust, ...) did best on this Page, for the hook judge."""
+    import re
+    try:
+        styles = {}
+        for r in sheet.worksheet("Images").get_all_records():
+            m = re.search(r"hook:([a-z_]+)", str(r.get("note", "")))
+            if r.get("page") == page_key and m and r.get("fb_post_id"):
+                styles[str(r["fb_post_id"])] = m.group(1)
+        if not styles:
+            return ""
+        num = lambda v: float(v) if str(v).replace(".", "", 1).isdigit() else 0.0
+        by = {}
+        for r in perf_tab(sheet).get_all_records():
+            st = styles.get(str(r.get("post_id")))
+            if st and r.get("page") == page_key:
+                by.setdefault(st, []).append(num(r.get("plays")) or num(r.get("reach")))
+        ranked = sorted(((sum(v) / len(v), k, len(v)) for k, v in by.items() if len(v) >= min_posts), reverse=True)
+        if len(ranked) < 2:
+            return ""
+        return ("Past results on this Page (average views per Reel by hook style): "
+                + ", ".join(f"{k} {avg:,.0f} ({n} Reels)" for avg, k, n in ranked)
+                + ". Prefer the stronger styles when two options are close, but quality and honesty come first.")
+    except Exception as exc:
+        log(f"hook hint skipped: {str(exc)[:100]}")
+        return ""
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")

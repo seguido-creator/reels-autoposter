@@ -908,6 +908,7 @@ def main():
         try:
             import analytics
             page["_perf"] = analytics.perf_hint(sheet, page["key"]) if not args.preview else ""
+            page["_hook_hint"] = analytics.hook_hint(sheet, page["key"]) if not args.preview else ""
         except Exception as exc:
             log(f"[{page['key']}] performance hint skipped: {str(exc)[:100]}")
         try:
