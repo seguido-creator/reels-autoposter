@@ -27,9 +27,7 @@
       "token_env": "FB_TOKEN_US",
       "timezone": "America/New_York",
       "slots": [
-        "12:00",
-        "19:00",
-        "21:30"
+        "19:00"
       ],
       "brand": "Throttle Decoded",
       "follow_cta": "Follow for one car fact a day",
@@ -44,7 +42,6 @@
       "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type.",
       "image": {
         "slots": [
-          "08:00",
           "17:00"
         ],
         "footer": "Cars, explained. Follow for daily car facts.",
@@ -93,9 +90,7 @@
       "token_env": "FB_TOKEN_UAE",
       "timezone": "Asia/Dubai",
       "slots": [
-        "13:00",
-        "19:30",
-        "21:30"
+        "19:30"
       ],
       "brand": "Stay Decoded",
       "follow_cta": "Follow for daily travel secrets",
@@ -113,7 +108,6 @@
       "content_angle": "LUXURY STAYS & TRAVEL. Explain the design, architecture, hospitality tricks, travel hacks or the 'how does this work' behind what we see (infinity pools, overwater villas, yacht stabilisers, booking tips). Never invent a hotel name, location, or price; mention a place only if it is unmistakable (e.g. Burj Al Arab), otherwise say 'this resort'.",
       "image": {
         "slots": [
-          "08:00",
           "20:30"
         ],
         "footer": "Luxury stays & travel smarts, decoded.",
@@ -235,12 +229,7 @@
       "audience": "Pet lovers in the US, UK, Canada and Australia, all ages, who enjoy funny and heartwarming dog and cat content.",
       "language": "Warm, playful, simple American English.",
       "image": {
-        "slots": [
-          "11:00",
-          "13:00",
-          "18:00",
-          "20:30"
-        ],
+        "slots": [],
         "footer": "Funny pets, real pet facts.",
         "angle": "DOGS AND CATS: surprising but true pet behavior facts, funny-but-true 'pet logic', practical and safe care tips. Only well-established veterinary/behavior facts; if health is involved, say to ask a vet.",
         "types": [
@@ -350,10 +339,7 @@
       "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk and post on Facebook, like a friendly kabayan. Light, warm, relatable; keep money terms and numbers clear.",
       "image": {
         "slots": [
-          "07:30",
-          "12:30",
-          "18:00",
-          "22:00"
+          "18:00"
         ],
         "footer": "Money smarts for Filipinos & OFWs.",
         "angle": "PERSONAL FINANCE FOR FILIPINOS & OFWs: budgeting, emergency funds, saving habits, avoiding debt traps and scams, how common investments work in general (e.g. what an index fund, Pag-IBIG MP2 or a time deposit is). General education only: never recommend a specific stock, coin, company or product, never promise returns, never quote current rates or prices.",
@@ -410,10 +396,7 @@
       "language": "Simple, clear international English.",
       "image": {
         "slots": [
-          "09:00",
-          "13:30",
-          "18:30",
-          "21:30"
+          "18:30"
         ],
         "footer": "Cleaning, organising & moving hacks.",
         "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home cool and fresh in hot climates. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
@@ -535,7 +518,6 @@
       "US": "10:30",
       "UAE": "10:30",
       "PH": "10:00",
-      "PAWS": "09:30",
       "DEM": "14:00",
       "FIN": "10:00",
       "HOME": "11:00",

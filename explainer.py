@@ -225,7 +225,7 @@ def use_list(page, card):
 
 GENERIC = {"home", "house", "closeup", "close", "view", "scene", "person", "people", "modern", "indoor",
            "outdoor", "background", "shot", "footage", "video", "inside", "small", "large", "beautiful"}
-MAX_LOOKS = 12     # Gemini thumbnail checks per scene
+MAX_LOOKS = 4      # Gemini thumbnail checks per scene (lean plan)
 MAX_STILLS = 3     # scenes that may fall back to the post's own (already checked) photo
 
 
