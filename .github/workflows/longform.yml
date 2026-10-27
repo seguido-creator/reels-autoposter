@@ -1,0 +1,65 @@
+name: Long-form video
+
+# Makes one long YouTube documentary for a channel in config.json "youtube_channels" and saves the video,
+# thumbnail and title/description to Drive for review (see longform.py). Nothing is published.
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Channel key (e.g. HIST_YT)"
+        required: true
+        default: "HIST_YT"
+      topic:
+        description: "Topic (leave empty to let the writer pick)"
+        required: false
+        default: ""
+      minutes:
+        description: "Target length in minutes (empty = channel default)"
+        required: false
+        default: ""
+
+concurrency:
+  group: longform-${{ inputs.channel }}
+  cancel-in-progress: false
+
+jobs:
+  longform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      TTS_MODEL: ${{ vars.TTS_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install tools
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get update -qq
+          sudo -E apt-get install -y -qq --no-install-recommends ffmpeg fonts-dejavu-core
+          pip install -q -r requirements.txt pillow fonttools brotli
+          python fetch_fonts.py
+          cd remotion && npm install --no-audit --no-fund --loglevel=error && npx remotion browser ensure
+
+      - name: Make the video
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          TOPIC: ${{ inputs.topic }}
+          MINUTES: ${{ inputs.minutes }}
+        run: python longform.py --channel "$CHANNEL" --topic "$TOPIC" --minutes "${MINUTES:-0}"
