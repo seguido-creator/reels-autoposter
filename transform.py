@@ -147,7 +147,15 @@ def generate(client, contents, config=None, rounds=3):
     """generate_content with retries, falling back through the model list.
     Retired models (404) are skipped for the rest of the run. If all are busy, wait and go
     round again; after `rounds` raises GeminiBusy (callers then leave the clip for later).
-    Returns (resp, model)."""
+    Returns (resp, model).
+    Plain-text jobs (no video/images, no Google Search tool) go to Claude first when ANTHROPIC_API_KEY is set
+    (paid by the Max plan's monthly API credits); any Claude error falls back to Gemini."""
+    if isinstance(contents, str) and os.environ.get("ANTHROPIC_API_KEY", "").strip() \
+            and not getattr(config, "tools", None):
+        try:
+            return _claude(contents, config)
+        except Exception as exc:
+            log(f"Claude unavailable ({str(exc)[:160]}), using Gemini")
     models = script_models()
     quota_hit = set()
     for rnd in range(rounds):
@@ -177,6 +185,42 @@ def generate(client, contents, config=None, rounds=3):
             log(f"All Gemini models busy, waiting {90 * (rnd + 1)}s before another round")
             time.sleep(90 * (rnd + 1))
     raise GeminiBusy("All Gemini models were busy (high demand)")
+
+
+CLAUDE_WRITER = "claude-sonnet-5-5"   # scripts, posts, outlines (creative work)
+CLAUDE_LIGHT = "claude-haiku-5-5"     # judges, replies, short checks
+
+
+def _claude(prompt, config=None):
+    """One Claude Messages API call. Returns (resp-like object with .text, model)."""
+    import requests
+    from types import SimpleNamespace
+    temp = getattr(config, "temperature", None)
+    model = (os.environ.get("CLAUDE_WRITER_MODEL", "").strip() or CLAUDE_WRITER) if temp is None or temp >= 0.5 \
+        else (os.environ.get("CLAUDE_LIGHT_MODEL", "").strip() or CLAUDE_LIGHT)
+    wants_json = getattr(config, "response_mime_type", "") == "application/json"
+    body = {"model": model, "max_tokens": 8000, "messages": [{"role": "user", "content": prompt}]}
+    if wants_json:
+        body["system"] = "Reply with valid JSON only: no markdown code fences, no text before or after the JSON."
+    last = None
+    for attempt in range(3):
+        r = requests.post("https://api.anthropic.com/v1/messages", timeout=300, json=body, headers={
+            "x-api-key": os.environ["ANTHROPIC_API_KEY"].strip(), "anthropic-version": "2023-06-01",
+            "content-type": "application/json"})
+        if r.status_code in (429, 500, 502, 503, 529):
+            last = f"{r.status_code} {r.text[:120]}"
+            time.sleep(8 * (attempt + 1))
+            continue
+        if not r.ok:
+            raise RuntimeError(f"{r.status_code} {r.text[:200]}")
+        data = r.json()
+        text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text").strip()
+        if wants_json:
+            text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text).strip()
+        if not text:
+            raise RuntimeError("empty Claude reply")
+        return SimpleNamespace(text=text), model
+    raise RuntimeError(f"Claude busy: {last}")
 
 
 def write_script(video_path, page, duration):
