@@ -159,7 +159,7 @@ def write_chapter(page, outline, i, minutes):
     sketch = "\n".join(f"{k + 1}. {c['title']}: {'; '.join(map(str, c.get('beats') or []))}"
                        for k, c in enumerate(outline["chapters"]))
     issues = ""
-    for attempt in range(3):
+    for attempt in range(4):
         data = _gen(CHAPTER_PROMPT.format(
             title=outline["title"], brand=page["name"], audience=page["audience"], language=page["language"],
             style_block=im.get("style_block", ""), extra_rules=im.get("extra_rules", ""), outline=sketch,
@@ -176,8 +176,11 @@ def write_chapter(page, outline, i, minutes):
         if res["verdict"] == "pass":
             return scenes, res.get("sources") or []
         issues = ("\nA fact-checker rejected the previous draft. Fix every point (use the verified values, "
-                  "hedge or drop anything uncertain): " + "; ".join(map(str, res.get("issues") or [])))
-    raise RuntimeError(f"chapter {i + 1} '{ch['title']}' did not pass the fact-check")
+                  "hedge or drop anything uncertain; fewer, simpler claims are better than risky details): "
+                  + "; ".join(map(str, res.get("issues") or []))
+                  + ("\nVerified facts you may rely on: " + str(res.get("verified_facts")) if res.get("verified_facts") else ""))
+    log(f"[{page['key']}] chapter {i + 1} '{ch['title']}' did not pass the fact-check, leaving it out")
+    return None, []
 
 
 # ---------------------------------------------------------------- visuals
@@ -276,13 +279,19 @@ def build(page, topic, minutes, workdir):
     work = Path(workdir)
     outline = write_outline(page, topic, minutes)
     log(f"[{page['key']}] outline: {outline['title']} | " + " / ".join(c["title"] for c in outline["chapters"]))
-    chapters, sources = [], []
+    chapters, sources, kept = [], [], []
     for i in range(len(outline["chapters"])):
         scenes, src = write_chapter(page, outline, i, minutes)
+        if not scenes:
+            continue
         chapters.append(scenes)
+        kept.append(outline["chapters"][i])
         sources += src
         log(f"[{page['key']}] chapter {i + 1} ready ({sum(len(s['vo'].split()) for s in scenes)} words, "
             f"{len(scenes)} scenes)")
+    if len(chapters) < 4:
+        raise RuntimeError(f"only {len(chapters)} chapters passed the fact-check, need at least 4")
+    outline["chapters"] = kept
 
     # voice: hook, then a short gap + each chapter
     parts, timeline = [], []   # timeline: (kind, start, dur, payload)
