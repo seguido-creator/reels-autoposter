@@ -488,7 +488,7 @@ def animate_key_shots(page, items, scene_props, pub):
         sc, v = items[k][3], scene_props[k]
         raw = pub / f"m{k:03d}_raw.mp4"
         try:
-            if not omni_clip(pub / v["img"], sc.get("move") or "", int(min(8, max(5, round(v["dur"])))), raw, key):
+            if not omni_clip(pub / v["img"], sc.get("move") or "", int(min(6, max(4, round(v["dur"] * 0.6)))), raw, key):
                 return
             name = f"m{k:03d}.mp4"
             secs_used.append(_fit_clip(raw, pub / name, v["dur"]))
@@ -718,7 +718,7 @@ def make_thumbnail(page, outline, th, out, cfg, work):
         for k, line in enumerate(lines):
             if k == len(lines) - 1:
                 tw = d.textlength(line, font=f1)
-                d.rectangle([48, y + int(size * 0.08), 48 + tw + 36, y + int(size * 1.12)], fill=accent)
+                d.rectangle([48, y + int(size * 0.06), 48 + tw + 36, y + int(size * 1.32)], fill=accent)
                 d.text((66, y), line, font=f1, fill=th.get("on_accent", "#14110D"))
             else:
                 d.text((60, y), line, font=f1, fill=th.get("text", "#F3EADB"), stroke_width=6, stroke_fill="#000000")
