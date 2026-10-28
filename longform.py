@@ -9,9 +9,11 @@ Pipeline (one run = one video, saved to Drive for review; nothing is published h
   4. Visuals: illustrations are generated in the channel's own art style (Gemini image model); artifact photos
      come from Wikimedia Commons (public domain); maps and diagrams are drawn by Remotion. Never other creators'
      videos.
-  5. Edit (Remotion): camera moves on every shot, brand intro, chapter cards with a moving timeline, labels,
-     end-screen panel.
-  6. Package: MP4 + branded thumbnail + title/description (chapters, sources, credits, AI note) to Drive.
+  5. Motion: the key paintings (hook, each chapter's opener, the moments the writer flags; max LONG_MOTION_CLIPS,
+     default 12) become short moving shots with Gemini Omni Flash image-to-video (about $0.10 per second).
+  6. Edit (Remotion): camera moves and mood effects (fog, embers, light rays, sand, water) on every shot, 3D globe
+     maps that fly to each place and show its era, brand intro, chapter cards with a timeline, end-screen panel.
+  7. Package: MP4 + 2 branded thumbnails + title/description (chapters, sources, credits, AI note) to Drive.
 
   python longform.py --channel HIST_YT --topic "What the world looked like when the Great Pyramid was built"
   python longform.py --channel HIST_YT            # the writer proposes and picks a topic
@@ -48,20 +50,25 @@ Voice and style: {language}
 {topic_line}
 
 Plan a {minutes}-minute video (about {words} spoken words in total). Rules:
-- Title: max 70 characters, curiosity + clarity, honest (the video must deliver it), no clickbait words like
-  "shocking". Give the best title and 2 alternatives.
-- Thumbnail: "thumb_text" 2-4 punchy words that ADD to the title (do not repeat it); "thumb_art" a one-sentence
-  scene for a dramatic painted thumbnail illustration (one clear subject, close and bold, strong light).
+- Title: max 70 characters, built on the single most surprising TRUE fact of the video (the "wait, is that
+  really true?" moment), clear and honest (the video must prove it), no clickbait words like "shocking".
+  Example of the tone: "Cleopatra Lived Closer to Us Than to the Pyramids". Give the best title and 2 alternatives.
+- Thumbnail: "thumb_texts" = 2 options, each 3-5 punchy words stating a bold, surprising but TRUE claim that makes a
+  viewer stop and think "is it really?" (e.g. "MAMMOTHS STILL LIVED", "THE PYRAMID WAS ALREADY ANCIENT"). They must
+  not repeat the title word for word. "thumb_art": one sentence for a dramatic painted thumbnail that PROVES the
+  claim with a visual contrast of two subjects in one frame (e.g. a woolly mammoth in the foreground with the
+  pyramid in the background), subjects big and close, strong rim light, simple background.
 - Hook: the spoken opening, 45-70 words. Start with the most surprising TRUE fact of the whole video,
   promise what the viewer will understand by the end, no "in this video", no greetings. "hook_art": the
-  painted scene shown under the hook.
+  painted scene shown under the hook; "hook_move": one sentence of what moves in that shot and how the camera
+  moves; "hook_fx": dust, fog, smoke, embers, rays, sand, rain or water.
 - 5 to 7 chapters in a clear order that builds curiosity; the strongest reveal near the end.
 - Each chapter: a short title (max 6 words), 2-4 bullet "beats" (facts or story points), "era" (as shown on
   screen, e.g. "c. 2600 BC") and "year" (an integer, negative for BC, e.g. -2600).
 - Only well-documented facts that appear in standard encyclopedias. Ancient dates are estimates
   ("around", "about"). No invented quotes.
-Return ONLY JSON: {{"title": "...", "alt_titles": ["...", "..."], "thumb_text": "...", "thumb_art": "...",
-"hook": "...", "hook_art": "...", "chapters": [{{"title": "...", "beats": ["..."], "era": "...", "year": -2600}}],
+Return ONLY JSON: {{"title": "...", "alt_titles": ["...", "..."], "thumb_texts": ["...", "..."], "thumb_art": "...",
+"hook": "...", "hook_art": "...", "hook_move": "...", "hook_fx": "dust", "chapters": [{{"title": "...", "beats": ["..."], "era": "...", "year": -2600}}],
 "description": "2-3 sentence YouTube description in plain language", "tags": ["up to 12 search tags"]}}"""
 
 CHAPTER_PROMPT = """You write one chapter of the YouTube documentary "{title}" for the channel "{brand}".
@@ -85,16 +92,23 @@ Rules for the visuals - EVERY scene picks exactly one "kind":
 - "illustration" (default): "art" = one sentence describing a painted scene that shows EXACTLY what this scene
   says (who, doing what, where, period-accurate clothing, tools and buildings, camera framing: wide, medium or
   close-up). Never text or labels in the picture. Vary framing between scenes.
-- "map": when the story moves to a different place. "map" = {{"place": "short name", "lat": number, "lon": number,
-  "from_place": "where we came from or empty", "from_lat": number or null, "from_lon": number or null}} with
-  real modern coordinates of the site. Max 2 maps per chapter.
+- "map": when the story moves to a different place. "map" = {{"place": "short name, region", "lat": number,
+  "lon": number, "era": "the date we are talking about at this place, e.g. c. 2560 BC", "from_place": "where we
+  came from or empty", "from_lat": number or null, "from_lon": number or null}} with real modern coordinates of
+  the site. Max 2 maps per chapter.
 - "steps": when the scene explains HOW something was done (a method or process). "steps_title" (max 6 words),
   "steps" = 3-4 short steps (max 6 words each, factual), and "art" for the background painting. Max 1 per chapter.
 - "artifact": only when the scene is about one famous real object that exists in a museum or a famous real
   monument photo (e.g. the Standard of Ur). "commons" = Wikimedia Commons search words for it.
 "label": optional on-screen place/date label (max 5 words, e.g. "Ur, Mesopotamia - c. 2600 BC"), else "".
+"fx": the moving atmosphere over the picture, one of: dust (default), fog, smoke, embers (fire, torches, lamps,
+forges), rays (sunlight, temples, interiors), sand (desert, wind), rain, water (rivers, sea, boats).
+"animate": true for the 1-2 most dramatic illustration scenes of the chapter (big action, a reveal, a crowd at
+work), else false. "move": for those, one sentence of what moves in the shot (people, animals, cloth, water,
+smoke, fire) and how the camera moves (slow push-in, pan, crane up).
 Return ONLY JSON: {{"scenes": [{{"vo": "...", "kind": "illustration|map|steps|artifact", "art": "...",
-"map": {{...}} or null, "steps_title": "", "steps": [], "commons": "", "label": ""}}]}}"""
+"map": {{...}} or null, "steps_title": "", "steps": [], "commons": "", "label": "", "fx": "dust",
+"animate": false, "move": ""}}]}}"""
 
 TOPIC_PROMPT = """Suggest 6 topics for long-form YouTube documentaries on the channel "{brand}".
 Audience: {audience}. Angle: {angle}
@@ -184,6 +198,7 @@ def _clean_scene(s):
     if kind == "map":
         try:
             mp = {"place": str(mp.get("place") or "")[:30], "lat": float(mp["lat"]), "lon": float(mp["lon"]),
+                  "era": str(mp.get("era") or "").strip()[:24],
                   "fromPlace": str(mp.get("from_place") or "")[:30] or None,
                   "fromLat": float(mp["from_lat"]) if mp.get("from_lat") is not None else None,
                   "fromLon": float(mp["from_lon"]) if mp.get("from_lon") is not None else None}
@@ -197,7 +212,22 @@ def _clean_scene(s):
     return {"vo": str(s["vo"]).strip(), "kind": kind, "art": str(s.get("art") or "").strip(),
             "map": mp if kind == "map" else None, "steps": steps if kind == "steps" else [],
             "steps_title": str(s.get("steps_title") or "").strip()[:60], "commons": str(s.get("commons") or "").strip(),
-            "label": str(s.get("label") or "").strip()[:48]}
+            "label": str(s.get("label") or "").strip()[:48], "fx": _fx(s.get("fx"), s.get("art") or s["vo"]),
+            "animate": bool(s.get("animate")) and kind == "illustration", "move": str(s.get("move") or "").strip()}
+
+
+FX = ("dust", "fog", "smoke", "embers", "rays", "sand", "rain", "water", "none")
+FX_WORDS = [("embers", "fire torch lamp forge flame burning candle furnace"), ("sand", "desert sand dune wind storm"),
+            ("water", "river nile sea boat ship harbor flood water canal"), ("fog", "fog mist dawn morning marsh"),
+            ("smoke", "smoke battle war ruin"), ("rain", "rain storm"), ("rays", "temple sun light interior hall")]
+
+
+def _fx(v, text):
+    v = str(v or "").lower().strip()
+    if v in FX:
+        return v
+    low = str(text).lower()
+    return next((fx for fx, words in FX_WORDS if any(w in low for w in words.split())), "dust")
 
 
 def write_chapter(page, outline, i, minutes):
@@ -302,7 +332,7 @@ def build_visual(page, sc, k, pub, taken, cfg, credits):
     import explainer
     kind = sc["kind"]
     if kind == "map":
-        return {"kind": "map", "map": sc["map"]}
+        return {"kind": "map", "map": sc["map"], "fx": "none"}
     if kind == "artifact" and sc["commons"]:
         hit = explainer.commons_image(sc["commons"], taken)
         if hit:
@@ -319,7 +349,8 @@ def build_visual(page, sc, k, pub, taken, cfg, credits):
         name = f"i{k:03d}.jpg"
         if gen_art(page, sc["art"], pub / name, cfg):
             credits.add("Original illustrations made for this channel (AI-assisted)")
-            out = {"kind": "steps" if kind == "steps" else "illustration", "img": name, "motion": k % 6}
+            out = {"kind": "steps" if kind == "steps" else "illustration", "img": name, "motion": k % 6,
+                   "fx": sc.get("fx") or "dust"}
             if kind == "steps":
                 out.update(steps=sc["steps"], stepsTitle=sc["steps_title"])
             return out
@@ -333,6 +364,144 @@ def build_visual(page, sc, k, pub, taken, cfg, credits):
         credits.add("Pexels" if str(hit["id"]).startswith("pxv") else "Pixabay")
         return {"kind": "clip", "clip": name}
     return {"kind": "card", "title": sc["label"] or sc["vo"][:80]}
+
+
+# ---------------------------------------------------------------- AI motion (Gemini Omni Flash, image-to-video)
+OMNI_MODEL = os.environ.get("LONG_MOTION_MODEL", "gemini-omni-1.1-flash")
+OMNI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
+OMNI_PRICE = 0.10  # USD per second of 720p video (Gemini API pricing, Oct 2026)
+
+
+def _find_video(node):
+    if isinstance(node, dict):
+        if str(node.get("mime_type") or node.get("mimeType") or "").startswith("video/") and (node.get("data") or node.get("uri")):
+            return node
+        if node.get("type") == "video" and (node.get("data") or node.get("uri")):
+            return node
+        for v in node.values():
+            hit = _find_video(v)
+            if hit:
+                return hit
+    elif isinstance(node, list):
+        for v in node:
+            hit = _find_video(v)
+            if hit:
+                return hit
+    return None
+
+
+def omni_clip(img_path, move, secs, out_path, key):
+    """Animates one painting into a short video shot. Returns the path or None (the still is kept then)."""
+    import time
+    import requests
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.open(img_path).convert("RGB").resize((1280, 720)).save(buf, "JPEG", quality=90)
+    prompt = (f"Animate this painting into a living cinematic shot of about {secs} seconds. {move or 'Subtle natural movement of the people, cloth, light and air, slow camera push-in.'} "
+              "Keep exactly the same painted art style, composition, people, faces, clothing, colors and lighting. "
+              "Movement is natural, gentle and continuous from the first second; nothing new appears, no morphing, "
+              "no text or letters. No dialogue, no music, no sound effects.")
+    body = {"model": OMNI_MODEL,
+            "input": [{"type": "image", "data": base64.b64encode(buf.getvalue()).decode(), "mime_type": "image/jpeg"},
+                      {"type": "text", "text": prompt}],
+            "response_format": {"type": "video", "aspect_ratio": "16:9", "resolution": "720p"}}
+    hdr = {"x-goog-api-key": key, "Content-Type": "application/json"}
+    data = None
+    for attempt in range(3):
+        try:
+            r = requests.post(OMNI_URL, headers=hdr, json=body, timeout=900)
+            if r.status_code in (429, 500, 502, 503, 504):
+                raise RuntimeError(f"HTTP {r.status_code}")
+            if r.status_code >= 400:
+                log(f"motion: {OMNI_MODEL} refused ({r.status_code}): {r.text[:200]}")
+                return None
+            data = r.json()
+            break
+        except Exception as exc:
+            log(f"motion: attempt {attempt + 1} failed ({str(exc)[:120]})")
+            time.sleep(20 * (attempt + 1))
+    if data is None:
+        return None
+    waited = 0
+    while not _find_video(data) and data.get("id") and str(data.get("status", "")).lower() not in ("failed", "cancelled") \
+            and waited < 900:
+        time.sleep(10)
+        waited += 10
+        data = requests.get(f"{OMNI_URL}/{data['id']}", headers=hdr, timeout=120).json()
+    vid = _find_video(data)
+    if not vid:
+        log(f"motion: no video in the answer (status {data.get('status')})")
+        return None
+    if vid.get("data"):
+        raw = base64.b64decode(vid["data"])
+    else:
+        rr = requests.get(vid["uri"], headers={"x-goog-api-key": key}, timeout=300, allow_redirects=True)
+        rr.raise_for_status()
+        raw = rr.content
+    Path(out_path).write_bytes(raw)
+    return out_path
+
+
+def _duration(path):
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+                       capture_output=True, text=True)
+    try:
+        return float(r.stdout.strip())
+    except ValueError:
+        return 0.0
+
+
+def _fit_clip(src, dst, dur):
+    """Exact scene length, 1920x1080 30fps, no audio: slows the shot a little if needed, then holds the last frame."""
+    import transform
+    d = _duration(src) or dur
+    rate = min(1.35, max(1.0, dur / d))
+    transform._run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-an", "-vf",
+                    f"setpts={rate:.4f}*PTS,scale=1920:1080:flags=lanczos,fps=30,tpad=stop_mode=clone:stop_duration={dur + 1:.2f}",
+                    "-t", f"{dur:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", str(dst)])
+    return d
+
+
+def animate_key_shots(page, items, scene_props, pub):
+    """Turns the most important paintings (hook, each chapter's first picture, the scenes the writer flagged) into
+    moving shots. Capped by LONG_MOTION_CLIPS (default 12); any failure keeps the animated still."""
+    from concurrent.futures import ThreadPoolExecutor
+    cap = int(os.environ.get("LONG_MOTION_CLIPS", "12") or 0)
+    key = (os.environ.get("GEMINI_IMAGE_API_KEY") or os.environ.get("GEMINI_API_KEY") or "").strip()
+    if cap <= 0 or not key:
+        return
+    ranked = []
+    for k, (_kind, _start, _dur, sc) in enumerate(items):
+        v = scene_props[k]
+        if v.get("kind") != "illustration" or not v.get("img"):
+            continue
+        prio = 0 if k == 0 else 1 if sc.get("first") else 2 if sc.get("animate") else None
+        if prio is not None:
+            ranked.append((prio, k))
+    picks = [k for _p, k in sorted(ranked)[:cap]]
+    if not picks:
+        return
+    log(f"[{page['key']}] animating {len(picks)} key shots with {OMNI_MODEL}")
+    secs_used = []
+
+    def one(k):
+        sc, v = items[k][3], scene_props[k]
+        raw = pub / f"m{k:03d}_raw.mp4"
+        try:
+            if not omni_clip(pub / v["img"], sc.get("move") or "", int(min(8, max(5, round(v["dur"])))), raw, key):
+                return
+            name = f"m{k:03d}.mp4"
+            secs_used.append(_fit_clip(raw, pub / name, v["dur"]))
+            raw.unlink(missing_ok=True)
+            v.update(kind="motion", clip=name)
+        except Exception as exc:
+            log(f"[{page['key']}] motion shot {k} failed, keeping the still: {str(exc)[:160]}")
+
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        list(ex.map(one, picks))
+    total = sum(secs_used)
+    log(f"[{page['key']}] motion: {len(secs_used)}/{len(picks)} shots animated, {total:.0f}s of video, "
+        f"about ${total * OMNI_PRICE:.2f}")
 
 
 # ---------------------------------------------------------------- audio
@@ -398,7 +567,9 @@ def build(page, topic, minutes, workdir):
     parts.append(lead)
     t = 0.3
     hook = {"vo": outline["hook"], "kind": "illustration", "art": outline.get("hook_art") or outline.get("thumb_art", ""),
-            "map": None, "steps": [], "steps_title": "", "commons": "", "label": ""}
+            "map": None, "steps": [], "steps_title": "", "commons": "", "label": "",
+            "fx": _fx(outline.get("hook_fx"), outline.get("hook_art") or ""), "animate": True,
+            "move": outline.get("hook_move") or ""}
     add_scene(hook, 0)
     intro_start = t
     gi = work / "intro.wav"
@@ -416,7 +587,11 @@ def build(page, topic, minutes, workdir):
         chap_props.append({"start": round(t, 3), "dur": GAP, "n": ci + 1, "title": c["title"],
                            "era": c.get("era") or "", "year": c.get("year")})
         t += GAP
-        for sc in scenes:
+        for j, sc in enumerate(scenes):
+            if sc["kind"] == "map" and sc.get("map") and not sc["map"].get("era"):
+                sc["map"]["era"] = c.get("era") or ""
+            if j == next((q for q, x in enumerate(scenes) if x["kind"] == "illustration"), -1):
+                sc["first"] = True
             add_scene(sc, n)
             n += 1
     end_start = t
@@ -436,6 +611,7 @@ def build(page, topic, minutes, workdir):
         v.update(start=round(start, 3), dur=round(dur, 3), label=sc.get("label") or "")
         scene_props.append(v)
     log(f"[{page['key']}] visuals: {counts}")
+    animate_key_shots(page, items, scene_props, pub)
 
     th = dict(page["image"].get("theme") or {}, **(page.get("doc_theme") or {}))
     years = [c["year"] for c in chap_props if c.get("year") is not None]
@@ -457,7 +633,7 @@ def build(page, topic, minutes, workdir):
     render_doc(page, props, pub, out, work)
 
     thumb = work / "thumbnail.jpg"
-    make_thumbnail(page, outline, th, thumb, cfg, work)
+    thumbs = make_thumbnail(page, outline, th, thumb, cfg, work)
     desc = [outline.get("description", "").strip(), "",
             "Chapters:"] + [f"{_ts(s)} {nm}" for nm, s in chapter_marks] + [""]
     if sources:
@@ -468,7 +644,8 @@ def build(page, topic, minutes, workdir):
              "Script researched and fact-checked against encyclopedias and museum sources.", "",
              " ".join("#" + re.sub(r"\W", "", str(x)) for x in (outline.get("tags") or [])[:3])]
     meta = {"title": outline["title"], "alt_titles": outline.get("alt_titles", []),
-            "thumb_text": outline.get("thumb_text", ""), "description": "\n".join(desc),
+            "thumb_texts": outline.get("thumb_texts") or [outline.get("thumb_text", "")], "thumbs": thumbs,
+            "description": "\n".join(desc),
             "tags": outline.get("tags", []), "minutes": round(total / 60, 1),
             "chapters": [{"title": nm, "start": _ts(s)} for nm, s in chapter_marks]}
     return out, thumb, meta
@@ -494,44 +671,66 @@ def render_doc(page, props, pub, out, work):
 
 
 def make_thumbnail(page, outline, th, out, cfg, work):
-    """1280x720 brand template: bold painted subject, dark side panel, 2-4 huge words, accent bar, monogram."""
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter
+    """1280x720 brand template: bold painted contrast scene, dark side panel, a 3-5 word claim (last line on an accent
+    block), monogram. Makes one thumbnail per claim option (for YouTube's thumbnail test); returns their paths."""
+    from PIL import Image, ImageDraw, ImageFont
     w, h = 1280, 720
     art = gen_art(page, (outline.get("thumb_art") or outline.get("hook_art") or outline["title"])
-                  + " Dramatic, high contrast, subject large on the right side of the frame, empty darker space on the left.",
+                  + " Thumbnail composition: dramatic, high contrast, the subjects large on the right two thirds of the "
+                    "frame, darker empty space on the left third.",
                   work / "thumb_art.jpg", cfg)
-    im = Image.open(art).convert("RGB").resize((w, h)) if art else Image.new("RGB", (w, h), th.get("bg", "#0F1418"))
+    base = Image.open(art).convert("RGB").resize((w, h)) if art else Image.new("RGB", (w, h), th.get("bg", "#0F1418"))
     shade = Image.new("L", (w, h))
     sd = ImageDraw.Draw(shade)
     for x in range(w):
-        sd.line([(x, 0), (x, h)], fill=int(max(0, 235 - x * 0.36)))
-    im = Image.composite(Image.new("RGB", (w, h), th.get("bg", "#0F1418")), im, shade)
-    d = ImageDraw.Draw(im)
+        sd.line([(x, 0), (x, h)], fill=int(max(0, 230 - x * 0.33)))
+    base = Image.composite(Image.new("RGB", (w, h), th.get("bg", "#0F1418")), base, shade)
     accent = th.get("accent", "#C8923A")
-    d.rectangle([0, 0, 16, h], fill=accent)
     fnt = lambda name, size: ImageFont.truetype(str((ROOT / "fonts" / name) if (ROOT / "fonts" / name).exists()
                                                     else ROOT / "fonts" / "Poppins-Bold.ttf"), size)
-    words = str(outline.get("thumb_text") or outline["title"]).upper().split()[:4]
-    lines = [" ".join(words[:2]), " ".join(words[2:])] if len(words) > 2 else [" ".join(words)]
-    size = 150
     title_font = page.get("thumb_font") or "Anton.ttf"
-    f1 = fnt(title_font, size)
-    while max(d.textlength(l, font=f1) for l in lines) > 690 and size > 80:
-        size -= 6
+    texts = [str(x) for x in (outline.get("thumb_texts") or []) if str(x).strip()] or \
+        [str(outline.get("thumb_text") or outline["title"])]
+    paths = []
+    for n, text in enumerate(texts[:2]):
+        im = base.copy()
+        d = ImageDraw.Draw(im)
+        d.rectangle([0, 0, 14, h], fill=accent)
+        words = text.upper().replace("?", "").split()[:6]
+        # 2 or 3 lines, the punchline (last line) gets the accent block
+        if len(words) <= 3:
+            lines = [" ".join(words[:-1]), words[-1]] if len(words) > 1 else words
+        elif len(words) == 4:
+            lines = [" ".join(words[:2]), " ".join(words[2:])]
+        else:
+            lines = [" ".join(words[:2]), " ".join(words[2:-2]) if len(words) > 5 else words[2],
+                     " ".join(words[-2:] if len(words) > 5 else words[3:])]
+        lines = [l for l in lines if l]
+        size = 170
         f1 = fnt(title_font, size)
-    y = h // 2 - int(len(lines) * size * 1.02) // 2
-    for k, line in enumerate(lines):
-        d.text((64, y), line, font=f1, fill=accent if k == len(lines) - 1 else th.get("text", "#F3EADB"),
-               stroke_width=5, stroke_fill="#000000")
-        y += int(size * 1.04)
-    # monogram + brand name, top-left
-    mono = page.get("monogram") or "".join(x[0] for x in page["name"].split()[:2]).upper()
-    d.ellipse([60, 44, 132, 116], outline=accent, width=5, fill=th.get("bg", "#0F1418"))
-    f2 = fnt(page.get("title_font") or "Playfair-Bold.ttf", 30)
-    d.text((96, 80), mono, font=f2, fill=th.get("text", "#F3EADB"), anchor="mm")
-    f3 = fnt(page.get("body_font") or "Poppins-Bold.ttf", 26)
-    d.text((148, 80), page["name"].upper(), font=f3, fill=th.get("text", "#F3EADB"), anchor="lm")
-    im.save(out, "JPEG", quality=92)
+        while max(d.textlength(l, font=f1) for l in lines) > 660 and size > 70:
+            size -= 6
+            f1 = fnt(title_font, size)
+        lh = int(size * 1.08)
+        y = h // 2 - lh * len(lines) // 2 + 20
+        for k, line in enumerate(lines):
+            if k == len(lines) - 1:
+                tw = d.textlength(line, font=f1)
+                d.rectangle([48, y + int(size * 0.08), 48 + tw + 36, y + int(size * 1.12)], fill=accent)
+                d.text((66, y), line, font=f1, fill=th.get("on_accent", "#14110D"))
+            else:
+                d.text((60, y), line, font=f1, fill=th.get("text", "#F3EADB"), stroke_width=6, stroke_fill="#000000")
+            y += lh + (10 if k == len(lines) - 2 else 0)
+        mono = page.get("monogram") or "".join(x[0] for x in page["name"].split()[:2]).upper()
+        d.ellipse([56, 40, 124, 108], outline=accent, width=5, fill=th.get("bg", "#0F1418"))
+        d.text((90, 74), mono, font=fnt(page.get("title_font") or "Playfair-Bold.ttf", 28),
+               fill=th.get("text", "#F3EADB"), anchor="mm")
+        d.text((140, 74), page["name"].upper(), font=fnt(page.get("body_font") or "Poppins-Bold.ttf", 24),
+               fill=th.get("text", "#F3EADB"), anchor="lm")
+        p = out if n == 0 else Path(out).with_name(f"thumbnail_{n + 1}.jpg")
+        im.save(p, "JPEG", quality=92)
+        paths.append(p)
+    return paths
 
 
 def main():
@@ -552,12 +751,17 @@ def main():
     stem = f"preview_long_{page['key']}_{utcnow():%Y%m%d_%H%M}"
     _, vlink = upload_render(drive, out, stem + ".mp4", folder)
     _, tlink = upload_render(drive, thumb, stem + "_thumbnail.jpg", folder, mime="image/jpeg")
+    for n, extra in enumerate(meta.get("thumbs", [])[1:], 2):
+        _, xl = upload_render(drive, extra, f"{stem}_thumbnail_{n}.jpg", folder, mime="image/jpeg")
+        tlink += f" | thumbnail {n} {xl}"
     mp = work / "meta.txt"
     mp.write_text(f"TITLE: {meta['title']}\nALTERNATIVES: {' | '.join(meta['alt_titles'])}\n"
+                  f"THUMBNAIL TEXT: {' | '.join(meta.get('thumb_texts') or [])}\n"
                   f"LENGTH: {meta['minutes']} min\nTAGS: {', '.join(meta['tags'])}\n\nDESCRIPTION:\n{meta['description']}\n",
                   encoding="utf-8")
     _, mlink = upload_render(drive, mp, stem + "_details.txt", folder, mime="text/plain")
     log(f"[{page['key']}] long-form preview: video {vlink} | thumbnail {tlink} | details {mlink}")
+    meta.pop("thumbs", None)
     print(json.dumps(meta, ensure_ascii=False, indent=1)[:3000])
 
 
