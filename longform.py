@@ -280,13 +280,13 @@ def gen_art(page, prompt, out_path, cfg):
     from google import genai
     import transform
     style = page.get("art_style") or DEFAULT_ART
-    client = genai.Client(api_key=key)
+    client = genai.Client(api_key=key, http_options={"timeout": 240000})
     for model, size in [(m, z) for m in cfg.get("image_models", ["gemini-nano-banana-2.1"]) for z in ("2K", "1K")]:
         try:
-            it = transform.with_retry(lambda: client.interactions.create(
+            it = transform.with_retry(lambda: transform.call_with_timeout(lambda: client.interactions.create(
                 model=model, input=f"{prompt}\n\nStyle: {style}",
                 response_format={"type": "image", "mime_type": "image/jpeg", "aspect_ratio": "16:9",
-                                 "image_size": size}), tries=2)
+                                 "image_size": size}), 200), tries=2)
             data = it.output_image.data
             raw = base64.b64decode(data) if isinstance(data, str) else bytes(data)
             im = Image.open(io.BytesIO(raw)).convert("RGB")
@@ -558,6 +558,8 @@ def build(page, topic, minutes, workdir):
         nonlocal t
         wav = work / f"vo{idx:03d}.wav"
         secs = transform.speak(sc["vo"], page, wav)
+        if idx % 10 == 0:
+            log(f"[{page['key']}] voice: scene {idx} recorded")
         parts.extend([wav, pause])
         items.append(("scene", t, secs + PAUSE, sc))
         t += secs + PAUSE

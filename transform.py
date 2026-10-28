@@ -99,7 +99,27 @@ def _gemini_client():
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise RuntimeError("GEMINI_API_KEY secret is missing")
-    return genai.Client(api_key=key)
+    return genai.Client(api_key=key, http_options={"timeout": int(os.environ.get("GEMINI_TIMEOUT_MS", "240000"))})
+
+
+def call_with_timeout(fn, secs):
+    """Runs fn() but gives up after secs (a stuck network call can otherwise hang a whole run)."""
+    import threading
+    box = {}
+
+    def run():
+        try:
+            box["ok"] = fn()
+        except BaseException as exc:  # noqa: BLE001
+            box["err"] = exc
+    th = threading.Thread(target=run, daemon=True)
+    th.start()
+    th.join(secs)
+    if th.is_alive():
+        raise TimeoutError(f"no answer after {secs}s")
+    if "err" in box:
+        raise box["err"]
+    return box["ok"]
 
 
 TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL",
@@ -310,9 +330,9 @@ def speak(text, page, out_wav):
     client = _gemini_client()
     model = os.environ.get("TTS_MODEL", "").strip() or load_config()["tts_model_default"]
     last = None
-    for attempt in range(3):
+    for attempt in range(4):
         try:
-            it = client.interactions.create(
+            it = call_with_timeout(lambda: client.interactions.create(
                 model=model,
                 input=[{"type": "user_input", "content": [{
                     "type": "text", "text": text,
@@ -320,7 +340,7 @@ def speak(text, page, out_wav):
                 }]}],
                 response_format={"type": "audio", "mime_type": "audio/wav"},
                 generation_config={"speech_config": [{"voice": page["voice"]}]},
-            )
+            ), int(os.environ.get("TTS_TIMEOUT", "150")))
             data = it.output_audio.data
             raw = base64.b64decode(data) if isinstance(data, str) else bytes(data)
             if raw[:4] != b"RIFF":  # raw PCM -> wrap as WAV
@@ -334,6 +354,7 @@ def speak(text, page, out_wav):
             return wav_seconds(out_wav)
         except Exception as exc:
             last = exc
+            log(f"TTS attempt {attempt + 1} failed: {str(exc)[:160]}")
             time.sleep(5 * (attempt + 1))
     raise RuntimeError(f"Voiceover failed: {last}")
 
