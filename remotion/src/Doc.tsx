@@ -11,6 +11,7 @@ import {
 import { geoOrthographic, geoPath, geoGraticule10, geoInterpolate, geoDistance } from "d3-geo";
 import { feature } from "topojson-client";
 import land50 from "world-atlas/land-50m.json";
+import land110 from "world-atlas/land-110m.json";
 
 export type DocTheme = {
   accent: string; onAccent: string; bg: string; ink: string; text: string; muted: string; land: string; sea: string;
@@ -201,6 +202,7 @@ const MotionShot: React.FC<{ sc: DocScene; frames: number }> = ({ sc, frames }) 
 
 /* ---------- 3D map: the globe spins to the place, then tilts into a 3D landscape view ---------- */
 const LAND = feature(land50 as any, (land50 as any).objects.land) as any;
+const LAND_LO = feature(land110 as any, (land110 as any).objects.land) as any;  // coarse outline while the globe is far away
 const GRAT = geoGraticule10();
 const SPHERE = { type: "Sphere" } as any;
 const PW = 3400, PH = 2700;  // map plane, larger than the screen so the tilt never shows its edges
@@ -252,6 +254,7 @@ const MapScene: React.FC<{ sc: DocScene; t: DocTheme; frames: number; i: number 
   const scale = 420 * Math.pow(endScale / 420, k);
   const proj = geoOrthographic().scale(scale).rotate([-center[0], -center[1]]).translate([PW / 2, PH * 0.5 + 40]).clipAngle(90);
   const path = geoPath(proj);
+  const landD = path(scale < 1100 ? LAND_LO : LAND) || "";
   const pin = proj(to) || [PW / 2, PH / 2];
   const fromPt = from ? proj(from) : null;
   const tiltK = interpolate(f, [fly * 0.7, fly * 0.7 + 50], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
@@ -295,9 +298,8 @@ const MapScene: React.FC<{ sc: DocScene; t: DocTheme; frames: number; i: number 
             </defs>
             <path d={path(SPHERE) || ""} fill={`url(#sea${i})`} stroke="#9fd0ff" strokeOpacity={0.35 * space} strokeWidth={6} />
             <path d={path(GRAT) || ""} fill="none" stroke={t.muted} strokeOpacity={0.14} strokeWidth={1.2} />
-            <path d={path(LAND) || ""} fill={t.accent} opacity={0.25} filter={`url(#glow${i})`} />
-            <path d={path(LAND) || ""} fill="#4a3c26" transform={`translate(0, ${4 + 12 * tiltK})`} />
-            <path d={path(LAND) || ""} fill={`url(#land${i})`} stroke={t.ink} strokeOpacity={0.4} strokeWidth={1.4} />
+            <path d={landD} fill="#4a3c26" transform={`translate(0, ${4 + 12 * tiltK})`} />
+            <path d={landD} fill={`url(#land${i})`} stroke={t.ink} strokeOpacity={0.4} strokeWidth={1.4} />
             {routeLine && route > 0 && <>
               <path d={path(routeLine) || ""} fill="none" stroke={t.accent} strokeWidth={14} opacity={0.35}
                 filter={`url(#glow${i})`} pathLength={1} strokeDasharray={`${route} 1`} />
