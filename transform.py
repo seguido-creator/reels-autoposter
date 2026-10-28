@@ -325,6 +325,9 @@ def _clean(text):
 
 
 # ---------------------------------------------------------------- voice
+_TTS_STUCK = {}  # model -> timeouts in a row during this run
+
+
 def speak(text, page, out_wav):
     """Gemini TTS -> 24 kHz mono WAV file."""
     client = _gemini_client()
@@ -333,6 +336,8 @@ def speak(text, page, out_wav):
     backup = os.environ.get("TTS_BACKUP_MODEL", "gemini-3.8-flash-lite-tts")
     # a stuck call is retried; then the lighter TTS model; then without the style note (rare runaway takes)
     plan = [(model, True), (model, True), (backup, True), (model, False), (backup, False)]
+    if _TTS_STUCK.get(model, 0) >= 2:  # the main model keeps hanging in this run: go straight to the backup
+        plan = [(backup, True), (backup, True), (model, True), (backup, False)]
     for attempt, (use_model, styled) in enumerate(plan):
         try:
             content = {"type": "text", "text": text}
@@ -354,9 +359,15 @@ def speak(text, page, out_wav):
                 Path(out_wav).write_bytes(raw)
             if wav_seconds(out_wav) < 0.5:
                 raise RuntimeError("TTS returned empty audio")
+            if use_model == model:
+                _TTS_STUCK[model] = 0
             return wav_seconds(out_wav)
         except Exception as exc:
             last = exc
+            if isinstance(exc, TimeoutError):
+                _TTS_STUCK[use_model] = _TTS_STUCK.get(use_model, 0) + 1
+                if use_model == model and _TTS_STUCK[model] == 2:
+                    log(f"TTS: {model} keeps hanging, using {backup} first for the rest of this run")
             log(f"TTS attempt {attempt + 1} ({use_model}{'' if styled else ', plain'}) failed: {str(exc)[:160]} | text: {text[:80]}")
             time.sleep(5 * (attempt + 1))
     raise RuntimeError(f"Voiceover failed: {last}")
