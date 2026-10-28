@@ -330,14 +330,17 @@ def speak(text, page, out_wav):
     client = _gemini_client()
     model = os.environ.get("TTS_MODEL", "").strip() or load_config()["tts_model_default"]
     last = None
-    for attempt in range(4):
+    backup = os.environ.get("TTS_BACKUP_MODEL", "gemini-3.8-flash-lite-tts")
+    # a stuck call is retried; then the lighter TTS model; then without the style note (rare runaway takes)
+    plan = [(model, True), (model, True), (backup, True), (model, False), (backup, False)]
+    for attempt, (use_model, styled) in enumerate(plan):
         try:
+            content = {"type": "text", "text": text}
+            if styled:
+                content["annotations"] = [{"type": "speech_metadata", "style": page["voice_style"]}]
             it = call_with_timeout(lambda: client.interactions.create(
-                model=model,
-                input=[{"type": "user_input", "content": [{
-                    "type": "text", "text": text,
-                    "annotations": [{"type": "speech_metadata", "style": page["voice_style"]}],
-                }]}],
+                model=use_model,
+                input=[{"type": "user_input", "content": [content]}],
                 response_format={"type": "audio", "mime_type": "audio/wav"},
                 generation_config={"speech_config": [{"voice": page["voice"]}]},
             ), int(os.environ.get("TTS_TIMEOUT", "150")))
@@ -354,7 +357,7 @@ def speak(text, page, out_wav):
             return wav_seconds(out_wav)
         except Exception as exc:
             last = exc
-            log(f"TTS attempt {attempt + 1} failed: {str(exc)[:160]}")
+            log(f"TTS attempt {attempt + 1} ({use_model}{'' if styled else ', plain'}) failed: {str(exc)[:160]} | text: {text[:80]}")
             time.sleep(5 * (attempt + 1))
     raise RuntimeError(f"Voiceover failed: {last}")
 
