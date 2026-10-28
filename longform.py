@@ -735,6 +735,24 @@ def make_thumbnail(page, outline, th, out, cfg, work):
     return paths
 
 
+def thumbs_only(page, spec, cfg):
+    """Remakes just the thumbnails (e.g. after a failed art call) and uploads them to the Renders folder."""
+    art, _, texts = spec.partition("||")
+    claims = [t.strip() for t in texts.split("|") if t.strip()]
+    work = Path(tempfile.mkdtemp(prefix="thumbs_"))
+    th = dict(page["image"].get("theme") or {}, **(page.get("doc_theme") or {}))
+    outline = {"title": claims[0] if claims else page["name"], "thumb_texts": claims, "thumb_art": art.strip()}
+    paths = make_thumbnail(page, outline, th, work / "thumbnail.jpg", cfg, work)
+    if not (work / "thumb_art.jpg").exists():
+        raise RuntimeError("thumbnail art could not be made (check the Gemini key and spending cap)")
+    from common import drive_service, google_creds, render_folder_id, upload_render
+    drive = drive_service(google_creds())
+    folder = render_folder_id(drive)
+    stem = f"thumbs_{page['key']}_{utcnow():%Y%m%d_%H%M}"
+    links = [upload_render(drive, pth, f"{stem}_{n + 1}.jpg", folder, mime="image/jpeg")[1] for n, pth in enumerate(paths)]
+    log(f"[{page['key']}] thumbnails: " + " | ".join(links))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--channel", default="HIST_YT")
@@ -744,6 +762,9 @@ def main():
     cfg = load_config()
     page = channel_page(cfg, args.channel)
     minutes = args.minutes or float(page.get("minutes", 10))
+    if args.topic.strip().upper().startswith("THUMBS:"):
+        # thumbnails only: topic = "THUMBS: <art scene> || <claim 1> | <claim 2>"
+        return thumbs_only(page, args.topic.strip()[7:], cfg)
     topic = args.topic.strip() or pick_topic(page)
     work = Path(tempfile.mkdtemp(prefix="long_"))
     out, thumb, meta = build(page, topic, minutes, work)
