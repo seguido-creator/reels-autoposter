@@ -25,7 +25,7 @@ concurrency:
 jobs:
   longform:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
