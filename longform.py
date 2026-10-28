@@ -466,7 +466,7 @@ def animate_key_shots(page, items, scene_props, pub):
     """Turns the most important paintings (hook, each chapter's first picture, the scenes the writer flagged) into
     moving shots. Capped by LONG_MOTION_CLIPS (default 12); any failure keeps the animated still."""
     from concurrent.futures import ThreadPoolExecutor
-    cap = int(os.environ.get("LONG_MOTION_CLIPS", "12") or 0)
+    cap = int(os.environ.get("LONG_MOTION_CLIPS", "0") or 0)
     key = (os.environ.get("GEMINI_IMAGE_API_KEY") or os.environ.get("GEMINI_API_KEY") or "").strip()
     if cap <= 0 or not key:
         return
