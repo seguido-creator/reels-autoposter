@@ -554,6 +554,21 @@
       "minutes": 10,
       "audience": "History lovers in the US aged 35 and over, many watching on a TV; curious, patient viewers who enjoy a well-told documentary.",
       "end_text": "Subscribe for the next story from the past",
+      "monogram": "HD",
+      "title_font": "Playfair-Bold.ttf",
+      "body_font": "Poppins-Medium.ttf",
+      "thumb_font": "Anton.ttf",
+      "art_style": "Painted historical documentary illustration in the style of a rich museum mural: cinematic 16:9 composition, gouache-and-oil texture with visible brushwork, warm bronze, ochre and deep teal palette, soft golden volumetric light, atmospheric depth. Historically accurate clothing, hairstyles, tools and architecture for the exact period and place; realistic proportions. No text, no letters, no numbers, no logos, no watermarks, no modern objects, not a photograph.",
+      "doc_theme": {
+        "accent": "#C8923A",
+        "on_accent": "#14110D",
+        "bg": "#0F1418",
+        "ink": "#0B0F12",
+        "text": "#F3EADB",
+        "muted": "#C9BBA3",
+        "land": "#C9B48C",
+        "sea": "#16222B"
+      },
       "image": {
         "angle": "Long-form documentaries about world history told in parallel: what was happening across the world at the same moment, how famous civilizations, inventions and landmarks overlap in time, and the surprising true stories behind them. Evergreen topics with proven US search interest (ancient Egypt, Rome, medieval life, famous mysteries, inventions, American history).",
         "style_block": "Tell it like a great documentary narrator: open with the most surprising true fact, build each chapter around one clear question, anchor every event with its year or century, connect events across the world ('meanwhile...'), and keep a calm, warm, intriguing tone. No hype, no textbook voice."
