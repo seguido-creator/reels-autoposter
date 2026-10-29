@@ -1,5 +1,6 @@
 """Free voice test: renders the same narration with Kokoro-82M (Apache 2.0, runs on CPU) in several voices
 and uploads the samples to the Drive Renders folder for review. Nothing is published."""
+import os
 import subprocess
 from pathlib import Path
 
@@ -15,7 +16,26 @@ TEXT = ("When the Great Pyramid was finished, around 2560 BC, woolly mammoths we
 VOICES = [("a", "am_michael"), ("a", "am_fenrir"), ("a", "am_onyx"), ("a", "af_heart"), ("b", "bm_george"), ("b", "bm_fable")]
 
 
+def narrate(lines, voice, speed):
+    """Renders each narration line separately (line_01.wav, line_02.wav, ...) and saves them to Drive."""
+    out = Path("narration")
+    out.mkdir(exist_ok=True)
+    drive = drive_service(google_creds())
+    folder = render_folder_id(drive)
+    stamp = f"{utcnow():%Y%m%d_%H%M}"
+    pipe = KPipeline(lang_code=voice[0])
+    for i, text in enumerate(lines, 1):
+        audio = np.concatenate([np.asarray(a) for _, _, a in pipe(text, voice=voice, speed=speed)])
+        wav = out / f"line_{i:02d}.wav"
+        sf.write(wav, audio, 24000)
+        _, link = upload_render(drive, wav, f"narration_{stamp}_{voice}_line_{i:02d}.wav", folder, mime="audio/wav")
+        log(f"narration line {i}: {len(audio) / 24000:.2f}s {link}")
+
+
 def main():
+    lines = [x.strip() for x in os.environ.get("LINES", "").split("|") if x.strip()]
+    if lines:
+        return narrate(lines, os.environ.get("VOICE") or "am_michael", float(os.environ.get("SPEED") or 1.0))
     out = Path("voice_samples")
     out.mkdir(exist_ok=True)
     drive = drive_service(google_creds())
