@@ -28,7 +28,10 @@ def narrate(lines, voice, speed):
         audio = np.concatenate([np.asarray(a) for _, _, a in pipe(text, voice=voice, speed=speed)])
         wav = out / f"line_{i:02d}.wav"
         sf.write(wav, audio, 24000)
+        mp3 = wav.with_suffix(".mp3")  # small copy for quick review on a phone
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(wav), "-b:a", "64k", str(mp3)], check=True)
         _, link = upload_render(drive, wav, f"narration_{stamp}_{voice}_line_{i:02d}.wav", folder, mime="audio/wav")
+        upload_render(drive, mp3, f"narration_{stamp}_{voice}_line_{i:02d}.mp3", folder, mime="audio/mpeg")
         log(f"narration line {i}: {len(audio) / 24000:.2f}s {link}")
 
 
