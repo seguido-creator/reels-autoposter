@@ -551,6 +551,7 @@
       "key": "HIST_YT",
       "name": "History Decoded",
       "base_page": "HIST",
+      "kokoro_voice": "am_michael",
       "minutes": 10,
       "audience": "History lovers in the US aged 35 and over, many watching on a TV; curious, patient viewers who enjoy a well-told documentary.",
       "end_text": "Subscribe for the next story from the past",

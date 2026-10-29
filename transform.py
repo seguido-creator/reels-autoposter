@@ -328,8 +328,32 @@ def _clean(text):
 _TTS_STUCK = {}  # model -> timeouts in a row during this run
 
 
+_KOKORO = {}
+
+
+def _kokoro(text, voice, out_wav, speed=1.0):
+    """Free local voice (Kokoro-82M, Apache 2.0, CPU) -> 24 kHz mono WAV. Voice ids start with a for US, b for UK."""
+    import numpy as np
+    import soundfile as sf
+    from kokoro import KPipeline
+    lang = voice[0]
+    pipe = _KOKORO.get(lang) or _KOKORO.setdefault(lang, KPipeline(lang_code=lang))
+    audio = np.concatenate([np.asarray(a) for _, _, a in pipe(text, voice=voice, speed=speed)])
+    sf.write(str(out_wav), audio, 24000)
+    return wav_seconds(out_wav)
+
+
 def speak(text, page, out_wav):
-    """Gemini TTS -> 24 kHz mono WAV file."""
+    """Voice -> 24 kHz mono WAV file. Pages with "kokoro_voice" use the free Kokoro model first; Gemini TTS is the
+    default and the backup."""
+    kv = page.get("kokoro_voice")
+    if kv and os.environ.get("FREE_TTS", "1") != "0":
+        try:
+            secs = _kokoro(text, kv, out_wav, float(page.get("kokoro_speed", 1.0)))
+            if secs >= 0.5:
+                return secs
+        except Exception as exc:  # missing package or model download problem: fall back to Gemini
+            log(f"free voice failed ({str(exc)[:120]}), using Gemini TTS")
     client = _gemini_client()
     model = os.environ.get("TTS_MODEL", "").strip() or load_config()["tts_model_default"]
     last = None
