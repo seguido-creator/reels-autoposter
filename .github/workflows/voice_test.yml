@@ -3,6 +3,19 @@ name: Free voice test
 # Renders sample narration with the free Kokoro-82M voice model (Apache 2.0, CPU) and saves the samples to Drive.
 on:
   workflow_dispatch:
+    inputs:
+      lines:
+        description: "Narration lines separated by | (empty = the 6-voice sample test)"
+        required: false
+        default: ""
+      voice:
+        description: "Kokoro voice id"
+        required: false
+        default: "am_michael"
+      speed:
+        description: "Speaking speed"
+        required: false
+        default: "1.0"
 
 jobs:
   voice:
@@ -25,4 +38,8 @@ jobs:
           sudo apt-get install -y -qq --no-install-recommends ffmpeg espeak-ng
           pip install -q -r requirements.txt "kokoro>=0.9.2" soundfile
       - name: Make samples
+        env:
+          LINES: ${{ inputs.lines }}
+          VOICE: ${{ inputs.voice }}
+          SPEED: ${{ inputs.speed }}
         run: python voice_test.py
