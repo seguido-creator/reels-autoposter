@@ -564,7 +564,8 @@
         "reel_intro": "magazine",
         "rec_zoom": true,
         "list_share": 0.2,
-        "max_words": 55
+        "max_words": 55,
+        "place_guard": true
       }
     }
   ],

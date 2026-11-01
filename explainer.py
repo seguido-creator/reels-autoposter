@@ -327,7 +327,7 @@ def find_clips(page, scenes, used_ids, still=None):
             want = [w.lower() for w in q.split() if len(w) > 2 and w.lower() not in GENERIC] or \
                    [w.lower() for w in q.split()]
             cands = [h for h in (_pixabay_videos(q, pkey) if pkey else []) + _pexels_videos(q, xkey)
-                     if h["id"] not in taken and _relevant(h.get("tags", ""), want, must)]
+                     if h["id"] not in taken and _relevant(h.get("tags", ""), want, must, page["image"].get("place_guard"))]
             if not cands:
                 continue
             vertical = [h for h in cands if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
@@ -383,7 +383,7 @@ def _fallback_clip(page, fallback, must, taken):
     for q in [x for x in [fallback, " ".join(fallback.split()[:2]), fallback.split()[0] if fallback else ""] if x]:
         want = [w.lower() for w in q.split() if len(w) > 2] or [q.lower()]
         cands = [h for h in (_pixabay_videos(q, pkey) if pkey else []) + _pexels_videos(q, xkey)
-                 if h["id"] not in taken and _relevant(h.get("tags", ""), want, must)]
+                 if h["id"] not in taken and _relevant(h.get("tags", ""), want, must, page["image"].get("place_guard"))]
         vertical = [h for h in cands if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
         pool = (vertical or cands)[:8]
         random.shuffle(pool)
@@ -437,6 +437,18 @@ def _commons_file(urls, wid):
 PD_LICENSES = ("public domain", "pd-", "cc0", "pdm")
 
 
+def _title_matches(query, title):
+    """The Commons file name must share at least one real word with the query (a name, place or year), so a search
+    for a person never returns an unrelated building whose page merely mentions him."""
+    import unicodedata
+    norm = lambda x: unicodedata.normalize("NFKD", x).encode("ascii", "ignore").decode().lower()
+    stop = {"the", "and", "of", "de", "los", "las", "del", "y", "la", "el", "portrait", "photograph", "photo",
+            "painting", "image", "picture", "century", "old", "historic", "file", "jpg", "png"}
+    q = {w for w in re.findall(r"[a-z0-9]+", norm(query)) if len(w) > 2 and w not in stop}
+    t = set(re.findall(r"[a-z0-9]+", norm(title)))
+    return not q or bool(q & t)
+
+
 def commons_image(query, taken=()):
     """A public-domain still (artwork, historic photo, map) from Wikimedia Commons, checked by Gemini.
     Returns a clip-like dict {id, image_url, tags, credit} or None."""
@@ -457,6 +469,8 @@ def commons_image(query, taken=()):
         wid = f"wc{p.get('pageid')}"
         if wid in taken or not any(x in lic for x in PD_LICENSES):
             continue
+        if not _title_matches(query, p.get("title", "")):
+            continue
         if info.get("mime") not in ("image/jpeg", "image/png") or min(info.get("width", 0), info.get("height", 0)) < 600:
             continue
         url = info.get("thumburl") or info.get("url")
@@ -473,11 +487,22 @@ BLOCK = {"military", "soldier", "soldiers", "army", "war", "weapon", "gun", "pol
          "funeral", "protest", "bikini", "lingerie", "alcohol", "beer", "wine", "cigarette", "smoking"}
 
 
-def _relevant(tags, want, must=()):
+PLACES = {"dubai", "burjkalifa", "burjkhalifa", "uae", "emirate", "emirates", "abudhabi", "qatar", "doha", "saudi",
+          "newyork", "nyc", "manhattan", "usa", "america", "london", "paris", "france", "italy", "rome", "venice",
+          "spain", "germany", "tokyo", "japan", "seoul", "korea", "china", "beijing", "shanghai", "hongkong",
+          "singapore", "bangkok", "thailand", "vietnam", "bali", "indonesia", "india", "mumbai", "istanbul",
+          "turkey", "egypt", "cairo", "mosque", "hijab", "quran", "philippines", "manila", "cebu", "philippine"}
+
+
+def _relevant(tags, want, must=(), guard=False):
     """Clip tags must mention the page's subject (e.g. 'car'), at least one search word,
-    and nothing off-brand."""
+    and nothing off-brand. A clip tagged with a specific place (Dubai, Tokyo...) is only used when the search
+    names that same place, so 'Manila skyline' never gets the Burj Khalifa (pages with image.place_guard)."""
     tl = {t.strip().lower() for t in str(tags).replace(",", " ").split()}
     if tl & BLOCK:
+        return False
+    wl = {w.lower() for w in want}
+    if guard and (tl & PLACES) - wl and not (tl & wl & PLACES):
         return False
     hit = lambda w: any(t in (w, w + "s", w + "es") or (len(w) > 3 and len(t) > 3 and (w in t or t in w))
                         for t in tl)
