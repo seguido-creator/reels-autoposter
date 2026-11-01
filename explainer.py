@@ -185,8 +185,10 @@ def write_script(page, card):
                            if as_list else "",
                            commons_field=COMMONS_FIELD if page["image"].get("commons") else "",
                            timeline_field=TIMELINE_FIELD if page["image"].get("timeline") else "")
-    for _ in range(3):
-        resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
+    budget = 95 if as_list else 70
+    ask = prompt
+    for attempt in range(3):
+        resp, _model = transform.generate(client, ask, types.GenerateContentConfig(
             response_mime_type="application/json", temperature=0.8))
         try:
             data = json.loads(resp.text or "{}")
@@ -201,6 +203,12 @@ def write_script(page, card):
             data = pick_hook(page, data, card)
             if not data.get("hook"):
                 log(f"[{page['key']}] explainer script without a usable hook, asking again")
+                continue
+            words = sum(len(str(sc["vo"]).split()) for sc in scenes)
+            if words > budget * 1.2 and attempt < 2:
+                log(f"[{page['key']}] explainer script too long ({words} words, max {budget}), asking again")
+                ask = (prompt + f"\n\nIMPORTANT: your previous script was {words} spoken words. The hard limit is "
+                       f"{budget} words in total. Short Reels keep viewers; cut filler, keep the best points.")
                 continue
             data["total"] = n if as_list else 0
             data["timeline"] = clean_timeline(data.get("timeline")) if page["image"].get("timeline") else []
@@ -335,8 +343,6 @@ def find_clips(page, scenes, used_ids, still=None):
                 break
         log(f"[{page['key']}] clip for '{sc['search']}': " + (f"{hit['id']} after {looks} look(s)" if hit
                                                               else f"none fitted ({looks} looked at)"))
-        if not hit:
-            hit = _fallback_clip(page, fallback, must, taken)
         if not hit and still and stills < MAX_STILLS:
             stills += 1
             hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
@@ -353,10 +359,15 @@ def find_clips(page, scenes, used_ids, still=None):
         picked.append(hit)
     for i, c in enumerate(picked):
         if c is None:
-            hit = _reuse_clip([x for x in picked if x])
+            # on-topic footage from this Reel first; the page's generic subject clip only when nothing else exists
+            # (a generic shot during a specific topic gets the Reel blocked by video QA)
+            hit = _reuse_clip([x for x in picked if x]) or _fallback_clip(page, fallback, must, taken)
             if not hit:
                 raise RuntimeError(f"no fitting stock clip for '{scenes[i]['search']}'")
-            log(f"[{page['key']}] no fitting clip for '{scenes[i]['search']}', reusing {hit['id']} from {hit['offset']:.0f}s")
+            log(f"[{page['key']}] no fitting clip for '{scenes[i]['search']}', using {hit['id']}"
+                + (f" from {hit['offset']:.0f}s" if hit.get("offset") else ""))
+            if not hit.get("reused"):
+                taken.add(hit["id"])
             picked[i] = hit
     return picked
 
