@@ -59,12 +59,12 @@ const Hook: React.FC<{ p: ReelProps }> = ({ p }) => {
   const { fps } = useVideoConfig();
   const s = spring({ frame: f, fps, config: { damping: 10, stiffness: 130 } });
   const out = interpolate(f, [80, 95], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const shake = f < 18 ? Math.sin(f * 2.3) * (18 - f) * 0.5 : 0;
+  const shake = f < 12 ? Math.sin(f * 2.3) * (12 - f) * 0.25 : 0;
   const text = p.theme.upper ? p.hook.toUpperCase() : p.hook;
   return (
     <AbsoluteFill style={{ justifyContent: "flex-start", alignItems: "center", paddingTop: 300, opacity: out }}>
       <div style={{
-        transform: `scale(${s}) rotate(${shake}deg)`, background: p.theme.accent, color: p.theme.onAccent,
+        transform: `scale(${0.88 + 0.12 * s}) rotate(${shake}deg)`, background: p.theme.accent, color: p.theme.onAccent,
         fontFamily: "Title", fontSize: text.length > 22 ? 92 : 112, lineHeight: 1.08, textAlign: "center",
         padding: "18px 44px", borderRadius: 30, maxWidth: 940, boxShadow: "0 24px 70px rgba(0,0,0,.5)",
       }}>{text}</div>
@@ -92,8 +92,8 @@ const MagazineIntro: React.FC<{ p: ReelProps }> = ({ p }) => {
           borderBottom: `1px solid ${p.theme.accent}`, padding: "10px 0", fontFamily: "Body", fontSize: 30,
           letterSpacing: 6, color: p.theme.text }}>SPECIAL EDITION</div>
       </div>
-      <div style={{ position: "absolute", left: 70, bottom: 640, width: 900, opacity: s2,
-        transform: `translateX(${(1 - s2) * -200}px)` }}>
+      <div style={{ position: "absolute", left: 70, bottom: 640, width: 900, opacity: 0.85 + 0.15 * s2,
+        transform: `translateX(${(1 - s2) * -40}px)` }}>
         <div style={{ display: "inline-block", background: p.theme.accent, color: p.theme.onAccent, fontFamily: "Body",
           fontSize: 34, padding: "4px 18px", borderRadius: 8, marginBottom: 14 }}>COVER STORY</div>
         <div style={{ fontFamily: "Title", fontSize: 96, lineHeight: 1.04, color: "#FFFFFF",
