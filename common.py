@@ -65,7 +65,28 @@ def drive_service(creds):
 
 def open_sheet(creds):
     import gspread
-    return gspread.authorize(creds).open_by_key(env("SHEET_ID"))
+    return gspread.authorize(creds, http_client=_retry_client()).open_by_key(env("SHEET_ID"))
+
+
+def _retry_client():
+    """gspread client that waits and retries when Google Sheets says 429 (read/write requests per minute).
+    The runner starts several scripts back to back; without this one busy minute crashed whole steps."""
+    import time
+    from gspread.exceptions import APIError
+    from gspread.http_client import HTTPClient
+
+    class RetryOn429(HTTPClient):
+        def request(self, *args, **kwargs):
+            for wait in (5, 10, 20, 40, 65, 0):
+                try:
+                    return super().request(*args, **kwargs)
+                except APIError as err:
+                    code = getattr(getattr(err, "response", None), "status_code", None)
+                    if code != 429 or not wait:
+                        raise
+                    log(f"Google Sheets busy (429), retrying in {wait}s")
+                    time.sleep(wait)
+    return RetryOn429
 
 
 # ---------------------------------------------------------------- sheet rows
