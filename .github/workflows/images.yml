@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       page:
-        description: "Page key for a manual run (US, UAE, PH, PAWS, DEM, FIN, HOME, HIST). Blank = normal schedule."
+        description: "Page key for a manual run (US, UAE, PH, PAWS, DEM, FIN, HOME, HIST, KAS). Blank = normal schedule."
         required: false
         default: ""
       mode:
@@ -49,6 +49,8 @@ jobs:
       FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
       FB_PAGE_ID_HIST: ${{ secrets.FB_PAGE_ID_HIST }}
       FB_TOKEN_HIST: ${{ secrets.FB_TOKEN_HIST }}
+      FB_PAGE_ID_KAS: ${{ secrets.FB_PAGE_ID_KAS }}
+      FB_TOKEN_KAS: ${{ secrets.FB_TOKEN_KAS }}
       RENDER_ENGINE: remotion
       PAGE: ${{ inputs.page || '' }}
       MODE: ${{ inputs.mode || 'post' }}
