@@ -499,6 +499,72 @@
       },
       "voice": "Charon",
       "voice_style": "calm, warm, intriguing documentary storyteller, clear and unhurried"
+    },
+    {
+      "key": "KAS",
+      "page_id_env": "FB_PAGE_ID_KAS",
+      "token_env": "FB_TOKEN_KAS",
+      "timezone": "Asia/Manila",
+      "brand": "Chika ng Kasaysayan",
+      "follow_cta": "I-follow para sa daily chika ng kasaysayan",
+      "follow_line": "I-follow ang Chika ng Kasaysayan para sa totoong chika ng kasaysayan araw-araw, mga mars.",
+      "audience": "Filipinos in the Philippines and abroad (OFWs, Fil-Ams), adults of all ages who love a good kuwento and want to know the real, human side of Philippine history and its heroes.",
+      "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk on Facebook, in the voice of a kuwentista tita sharing juicy but TRUE chika: warm, playful, a little dramatic ('Mga mars, alam n'yo ba...', 'Teka, may twist pa', 'Ito na, ito na'). Keep names, places and years clear.",
+      "voice": "Sulafat",
+      "voice_style": "masayang kuwentista tita sharing chika with friends: warm, playful, expressive and a little dramatic, natural Taglish, clear on names and years",
+      "image": {
+        "slots": [
+          "12:00",
+          "20:00"
+        ],
+        "footer": "Totoong chika ng kasaysayan.",
+        "angle": "PHILIPPINE HISTORY TOLD LIKE CHIKA: the human, surprising and dramatic side of well-documented Philippine history: the love lives and rivalries of heroes (Rizal's loves, Bonifacio vs Aguinaldo at Tejeros 1897, Antonio Luna's temper), who streets, towns and landmarks are named after (EDSA = Epifanio de los Santos), surprising family links between historical figures, everyday life in old Manila, firsts and 'hindi mo alam' facts. Every fact must carry its year or era and be well documented in standard references (encyclopedias, the National Historical Commission of the Philippines).",
+        "types": [
+          "fact",
+          "myth",
+          "question"
+        ],
+        "monogram": "CK",
+        "extra_rules": "Historical figures and events only. Never make a Reel about a living person, a current politician or a political family's present-day members, and no modern party politics (nothing after 1972 except neutral facts like street names). Chika tone, but respectful: never mock, insult or sexualise heroes; romance means letters, engagements and marriages only. Separate fact from legend: anything that is a family story, legend or disputed account must be said as 'ayon sa kuwento' or 'sabi ng ilang historians'. Never invent quotes, letters, dialogue, numbers or dates; if unsure of a detail, leave it out. Ancient or uncertain dates: say 'around'. The 'open on a real-life problem' rule does not apply: open with the juiciest TRUE detail as a chika hook. A professional-advice caveat is not needed. Stock-footage search phrases must describe what can be filmed today in plain English (e.g. 'old stone church Philippines', 'Intramuros walls', 'old letters candle', 'rice fields mountains'); use the commons field for real historic portraits and photographs.",
+        "style_block": "Tell it like a kuwentista tita sharing chika with friends:\n- Open with the juiciest TRUE detail as a hook ('Mga mars, alam n'yo ba na si Rizal...?'). The first spoken words ARE the hook.\n- Build it like a teleserye: who, what happened, then 'pero teka, may twist pa...'.\n- Anchor every event with its year so viewers can place it.\n- React like a tita ('Ang sakit, 'di ba?', 'Grabe!') but keep every fact accurate; label legends as 'ayon sa kuwento'.\n- End with a cliffhanger or one-line takeaway, then a genuine question that invites comments ('Kayo, team Bonifacio o team Aguinaldo?').",
+        "theme": {
+          "bg_top": "#2B1A12",
+          "bg_bottom": "#140B07",
+          "accent": "#C8102E",
+          "text": "#F7EBD9",
+          "muted": "#E0CBB0",
+          "on_accent": "#FFFFFF",
+          "motif": "circles",
+          "title_font": "Playfair-Bold.ttf",
+          "body_font": "Poppins-Medium.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "line_height": 1.15
+        },
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "old stone church",
+        "signals_hashtags": [
+          "kasaysayan",
+          "philippinehistory",
+          "historyph"
+        ],
+        "reel_subject": "",
+        "fact_check": true,
+        "commons": true,
+        "timeline": true,
+        "reel_intro": "magazine",
+        "rec_zoom": true,
+        "list_share": 0.2
+      }
     }
   ],
   "cross_share": {
