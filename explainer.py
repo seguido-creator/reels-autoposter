@@ -342,14 +342,22 @@ def find_clips(page, scenes, used_ids, still=None):
             hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
             log(f"[{page['key']}] no fitting clip for '{sc['search']}', using the post photo for this scene")
         if not hit:
-            hit = _reuse_clip(picked)
+            hit = _reuse_clip([c for c in picked if c])
             if hit:
                 log(f"[{page['key']}] no fitting clip for '{sc['search']}', reusing {hit['id']} from {hit['offset']:.0f}s")
         if not hit:
-            raise RuntimeError(f"no fitting stock clip for '{sc['search']}'")
+            picked.append(None)  # filled after the loop from a later scene's clip (e.g. scene 1 had no match)
+            continue
         if not hit.get("reused"):
             taken.add(hit["id"])
         picked.append(hit)
+    for i, c in enumerate(picked):
+        if c is None:
+            hit = _reuse_clip([x for x in picked if x])
+            if not hit:
+                raise RuntimeError(f"no fitting stock clip for '{scenes[i]['search']}'")
+            log(f"[{page['key']}] no fitting clip for '{scenes[i]['search']}', reusing {hit['id']} from {hit['offset']:.0f}s")
+            picked[i] = hit
     return picked
 
 
