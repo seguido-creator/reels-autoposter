@@ -185,7 +185,8 @@ def write_script(page, card):
                            if as_list else "",
                            commons_field=COMMONS_FIELD if page["image"].get("commons") else "",
                            timeline_field=TIMELINE_FIELD if page["image"].get("timeline") else "")
-    budget = 95 if as_list else 70
+    base = int(page["image"].get("max_words") or 70)  # Taglish pages speak fewer words per second
+    budget = base + 25 if as_list else base
     ask = prompt
     for attempt in range(3):
         resp, _model = transform.generate(client, ask, types.GenerateContentConfig(

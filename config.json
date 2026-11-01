@@ -525,7 +525,7 @@
           "question"
         ],
         "monogram": "CK",
-        "extra_rules": "Historical figures and events only. Never make a Reel about a living person, a current politician or a political family's present-day members, and no modern party politics (nothing after 1972 except neutral facts like street names). Chika tone, but respectful: never mock, insult or sexualise heroes; romance means letters, engagements and marriages only. Separate fact from legend: anything that is a family story, legend or disputed account must be said as 'ayon sa kuwento' or 'sabi ng ilang historians'. Never invent quotes, letters, dialogue, numbers or dates; if unsure of a detail, leave it out. Ancient or uncertain dates: say 'around'. The 'open on a real-life problem' rule does not apply: open with the juiciest TRUE detail as a chika hook. A professional-advice caveat is not needed. Stock-footage search phrases must describe what can be filmed today in plain English (e.g. 'old stone church Philippines', 'Intramuros walls', 'old letters candle', 'rice fields mountains'); use the commons field for real historic portraits and photographs.",
+        "extra_rules": "Historical figures and events only. Never make a Reel about a living person, a current politician or a political family's present-day members, and no modern party politics (nothing after 1972 except neutral facts like street names). Chika tone, but respectful: never mock, insult or sexualise heroes; romance means letters, engagements and marriages only. Separate fact from legend: anything that is a family story, legend or disputed account must be said as 'ayon sa kuwento' or 'sabi ng ilang historians'. Never invent quotes, letters, dialogue, numbers or dates; if unsure of a detail, leave it out. Ancient or uncertain dates: say 'around'. The 'open on a real-life problem' rule does not apply: open with the juiciest TRUE detail as a chika hook. A professional-advice caveat is not needed. Stock-footage search phrases must describe what can be filmed today in plain English (e.g. 'old stone church Philippines', 'Intramuros walls', 'old letters candle', 'rice fields mountains'); use the commons field for real historic portraits and photographs. Fill \"commons\" for at least half of the scenes, starting with scene 1, using the exact Wikimedia Commons name of a public-domain portrait, photograph or painting of the person or place being discussed (e.g. \"Andres Bonifacio portrait\", \"Jose Rizal photograph\", \"Emilio Aguinaldo 1898\", \"Intramuros 19th century photograph\"); stock footage is only for neutral scenes. Keep the whole spoken script under 55 words.",
         "style_block": "Tell it like a kuwentista tita sharing chika with friends:\n- Open with the juiciest TRUE detail as a hook ('Mga mars, alam n'yo ba na si Rizal...?'). The first spoken words ARE the hook.\n- Build it like a teleserye: who, what happened, then 'pero teka, may twist pa...'.\n- Anchor every event with its year so viewers can place it.\n- React like a tita ('Ang sakit, 'di ba?', 'Grabe!') but keep every fact accurate; label legends as 'ayon sa kuwento'.\n- End with a cliffhanger or one-line takeaway, then a genuine question that invites comments ('Kayo, team Bonifacio o team Aguinaldo?').",
         "theme": {
           "bg_top": "#2B1A12",
@@ -563,7 +563,8 @@
         "timeline": true,
         "reel_intro": "magazine",
         "rec_zoom": true,
-        "list_share": 0.2
+        "list_share": 0.2,
+        "max_words": 55
       }
     }
   ],
