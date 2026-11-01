@@ -39,7 +39,7 @@ Rules:
 Return JSON with exactly these keys:
 "hooks": exactly 3 DIFFERENT hook options, each using a different style from the hook list above, each an
     object with "style" (the style name), "hook" (on-screen opening title, max 6 words, no emojis; the topic
-    must be obvious even on mute) and "intro_vo" (the first spoken 1-2 sentences, max 22 words, opening the
+    must be obvious even on mute) and "intro_vo" (the first spoken 1-2 sentences, max 16 words, opening the
     video in that style and leading naturally into scene 2),
 "scenes": {scene_count} objects in order, each with
     "vo": the part of the script spoken during this scene (1-2 short sentences),
@@ -87,6 +87,14 @@ HOOKS AND RETENTION (patterns used by the most-watched short-form creators; use 
   familiar_anchor (start from something famous and twist it), time_parallel ("While X was happening, Y...").
 - Keep it moving: every 3-5 seconds a new beat (a "but...", "so...", a new fact, a new image). Save the most
   surprising point for last, and end on a line that makes the start feel worth rewatching.
+- The FIRST spoken word starts the hook. No greeting, no page name, no "in this video", no "hey guys", no
+  throat-clearing. Say on screen and out loud the same idea (sound-on and sound-off viewers both get it).
+- Open a loop in the first line (a question or promise that is only fully answered in the last scene) and
+  close it at the end. Halfway through, re-hook with a turn ("But here's the part most people miss...").
+- The last sentence should lead naturally back into the first one, so an automatic replay feels seamless.
+- Scene 1 footage ("search") must be the most eye-catching, MOVING shot of the exact thing the hook names.
+  Where it fits naturally, show a person or hands doing something in scene 1 (people on screen in the first
+  3 seconds hold viewers longer). Never open on a static, empty or generic shot.
 """
 
 JUDGE_PROMPT = """Three opening hooks were written for a short faceless Reel on the Facebook Page "{brand}" (audience:
@@ -128,10 +136,11 @@ def pick_hook(page, data, card):
     return data
 
 
-STORY_RULES = "- Spoken script 60-85 words in total, natural and conversational, short sentences."
+STORY_RULES = "- Spoken script 50-70 words in total (about 20-28 seconds), natural and conversational, short sentences."
 LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Number one...", "Number two..."),
   most surprising or most useful point LAST so people keep watching. Each point = what to do + why it works.
-- Spoken script 120-150 words in total, natural and conversational, short sentences."""
+- Spoken script 75-95 words in total (about 30-35 seconds), natural and conversational, short sentences.
+  Each point is ONE punchy sentence of what to do + a short reason. No filler between points."""
 
 W, H, FPS = 1080, 1920, 30
 
@@ -157,7 +166,7 @@ def write_script(page, card):
         details += ("\nA fact-checker rejected the previous draft for these reasons - fix every one: "
                     + "; ".join(map(str, card["_issues"])))
     as_list = use_list(page, card)
-    n = random.choice([3, 4, 5])
+    n = random.choice([3, 3, 4])  # short lists hold viewers; 5-point Reels ran 55-70s
     subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
     extra = page["image"].get("extra_rules")
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
@@ -326,15 +335,57 @@ def find_clips(page, scenes, used_ids, still=None):
                 break
         log(f"[{page['key']}] clip for '{sc['search']}': " + (f"{hit['id']} after {looks} look(s)" if hit
                                                               else f"none fitted ({looks} looked at)"))
+        if not hit:
+            hit = _fallback_clip(page, fallback, must, taken)
         if not hit and still and stills < MAX_STILLS:
             stills += 1
             hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
             log(f"[{page['key']}] no fitting clip for '{sc['search']}', using the post photo for this scene")
         if not hit:
+            hit = _reuse_clip(picked)
+            if hit:
+                log(f"[{page['key']}] no fitting clip for '{sc['search']}', reusing {hit['id']} from {hit['offset']:.0f}s")
+        if not hit:
             raise RuntimeError(f"no fitting stock clip for '{sc['search']}'")
-        taken.add(hit["id"])
+        if not hit.get("reused"):
+            taken.add(hit["id"])
         picked.append(hit)
     return picked
+
+
+def _fallback_clip(page, fallback, must, taken):
+    """Second chance for a scene: a clip of the page's own main subject (e.g. 'dog cat pet', 'elderly hands'),
+    still checked by Gemini. A clean on-brand shot beats dropping the whole Reel to a static card, which is
+    what lost most viewers in the first 2 seconds (Oct 2026 data)."""
+    pkey = os.environ.get("PIXABAY_API_KEY", "").strip()
+    xkey = os.environ.get("PEXELS_API_KEY", "").strip()
+    looks = 0
+    for q in [x for x in [fallback, " ".join(fallback.split()[:2]), fallback.split()[0] if fallback else ""] if x]:
+        want = [w.lower() for w in q.split() if len(w) > 2] or [q.lower()]
+        cands = [h for h in (_pixabay_videos(q, pkey) if pkey else []) + _pexels_videos(q, xkey)
+                 if h["id"] not in taken and _relevant(h.get("tags", ""), want, must)]
+        vertical = [h for h in cands if h["videos"]["medium"].get("height", 0) > h["videos"]["medium"].get("width", 1)]
+        pool = (vertical or cands)[:8]
+        random.shuffle(pool)
+        for h in pool[:2]:
+            looks += 1
+            if _fits(h, q):
+                log(f"[{page['key']}] fallback clip '{q}' -> {h['id']}")
+                return h
+            if looks >= 3:
+                return None
+    return None
+
+
+def _reuse_clip(picked):
+    """Last resort: a later part of a clip already used in this Reel (different moment, so it does not look
+    like a repeat). Stills and public-domain images are never reused."""
+    vids = [c for c in picked if not c.get("image_url") and not c.get("reused")]
+    if not vids:
+        return None
+    src = vids[len(picked) % len(vids)]
+    n = sum(1 for c in picked if c.get("reused") and c["id"] == src["id"]) + 1
+    return dict(src, reused=True, offset=float(4 * n))
 
 
 WIKI_UA = {"User-Agent": "HistoryDecodedBot/1.0 (https://www.facebook.com/61595243776702; freeguideshub@gmail.com) python-requests"}
@@ -481,6 +532,17 @@ def _hex(c):
     return "0x" + c.lstrip("#").upper()
 
 
+def _seek(src, offset):
+    """Start point for a reused clip: the wanted offset, wrapped inside the clip's length."""
+    import subprocess
+    try:
+        dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of",
+                                    "default=nw=1:nk=1", str(src)], capture_output=True, text=True, timeout=30).stdout)
+    except Exception:
+        return 0.0
+    return (offset % dur) if dur > 1 else 0.0
+
+
 def render(page, script, clips, out_path, clip_paths=None):
     """clip_paths lets tests pass local files instead of downloading."""
     import transform
@@ -518,7 +580,8 @@ def render(page, script, clips, out_path, clip_paths=None):
         src = Path(clip_paths[i]) if clip_paths else work / f"src{i}.mp4"
         if not clip_paths:
             _download(clip["videos"]["medium"]["url"], src)
-        transform._run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", "-i", str(src),
+        seek = ["-ss", f"{_seek(src, clip.get('offset', 0)):.2f}"] if clip.get("offset") else []
+        transform._run(["ffmpeg", "-y", "-v", "error", "-stream_loop", "-1", *seek, "-i", str(src),
                         "-t", f"{d:.3f}", "-an", "-vf",
                         f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},"
                         f"setsar=1,fps={FPS},eq=brightness=-0.04:saturation=1.08",
