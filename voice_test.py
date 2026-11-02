@@ -35,8 +35,29 @@ def narrate(lines, voice, speed):
         log(f"narration line {i}: {len(audio) / 24000:.2f}s {link}")
 
 
+def gemini_samples(text, voices, style):
+    """Same text in several Gemini TTS voices (e.g. VOICE=gemini:Laomedeia,Gacrux) -> MP3s in the Drive Renders folder."""
+    import transform
+    drive = drive_service(google_creds())
+    folder = render_folder_id(drive)
+    stamp = f"{utcnow():%Y%m%d_%H%M}"
+    out = Path("voice_samples")
+    out.mkdir(exist_ok=True)
+    for v in voices:
+        wav = out / f"{v}.wav"
+        secs = transform.speak(text, {"voice": v, "voice_style": style or "natural and expressive"}, wav)
+        mp3 = wav.with_suffix(".mp3")
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(wav), "-b:a", "128k", str(mp3)], check=True)
+        _, link = upload_render(drive, mp3, f"voice_test_gemini_{v}_{stamp}.mp3", folder, mime="audio/mpeg")
+        log(f"voice test {v}: {secs:.1f}s {link}")
+
+
 def main():
     lines = [x.strip() for x in os.environ.get("LINES", "").split("|") if x.strip()]
+    voice = os.environ.get("VOICE") or ""
+    if voice.startswith("gemini:"):
+        return gemini_samples(" ".join(lines) or TEXT, [v.strip() for v in voice[7:].split(",") if v.strip()],
+                              os.environ.get("STYLE", ""))
     if lines:
         return narrate(lines, os.environ.get("VOICE") or "am_michael", float(os.environ.get("SPEED") or 1.0))
     out = Path("voice_samples")
