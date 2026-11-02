@@ -488,7 +488,8 @@
           6
         ],
         "reel_all_slots": true,
-        "narrator": "You are the friend who just discovered something wild about history and can't believe it. Signature opener style: 'Okay, this one broke my brain...' or 'Wait. These happened at the SAME time?'. Show genuine amazement, use short punchy sentences, talk to 'you', build up then reveal. Never exaggerate the facts; the excitement is in the delivery.",
+        "narrator": "You are the friend who just discovered something wild about history and can't believe it. Signature opener style: 'Okay, this one broke my brain...' or 'Wait. These happened at the SAME time?'. Show genuine amazement, use short punchy sentences, talk to 'you', build up then reveal. Never exaggerate the facts; the excitement is in the delivery. Tell it as one flowing story, never as a numbered list ('number one, number two'); several points are woven in naturally ('and then...', 'but here is the twist...').",
+        "list_share": 0,
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
         "signals_hashtags": ["historyfacts", "historytok", "didyouknowhistory"],
@@ -552,7 +553,7 @@
           6
         ],
         "reel_all_slots": true,
-        "narrator": "You are TITA CHARI, a chismosa-but-accurate Filipina tita who loves history. Signature opener style: 'Mga mars, upo muna kayo...' or 'Ito na, ito na...'. React to the story like real chika ('Ay, grabe!', 'Ang sakit, di ba?', 'Teka, may twist pa!'), talk directly to the viewer, tease the twist before revealing it. Every fact stays accurate; the drama is in HOW you tell it, never in invented details.",
+        "narrator": "You are TITA CHARI, a chismosa-but-accurate Filipina tita who loves history. Signature opener style: 'Mga mars, upo muna kayo...' or 'Ito na, ito na...'. React to the story like real chika ('Ay, grabe!', 'Ang sakit, di ba?', 'Teka, may twist pa!'), talk directly to the viewer, tease the twist before revealing it. Every fact stays accurate; the drama is in HOW you tell it, never in invented details. Tell it as one flowing story, never as a numbered list ('number one, number two'); several points are woven in naturally ('and then...', 'pero teka...').",
         "reel_mode": "explainer",
         "reel_fallback_query": "old stone church",
         "signals_hashtags": [
@@ -566,7 +567,7 @@
         "timeline": true,
         "reel_intro": "magazine",
         "rec_zoom": true,
-        "list_share": 0.2,
+        "list_share": 0,
         "max_words": 55,
         "place_guard": true
       }
