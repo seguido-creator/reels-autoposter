@@ -611,7 +611,13 @@ def align_words(wav, script_words, page):
         if "m" not in _WHISPER:
             _WHISPER["m"] = WhisperModel(os.environ.get("ALIGN_MODEL", "base"), device="cpu", compute_type="int8")
         lang = "tl" if "taglish" in str(page["image"].get("language") or page.get("language") or "").lower() else "en"
-        segs, _ = _WHISPER["m"].transcribe(str(wav), language=lang, word_timestamps=True, beam_size=1,
+        import subprocess
+        import numpy as np
+        # decode with ffmpeg ourselves (faster-whisper's own decoder breaks with newer PyAV versions)
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                             capture_output=True, check=True, timeout=120).stdout
+        audio = np.frombuffer(raw, dtype=np.float32)
+        segs, _ = _WHISPER["m"].transcribe(audio, language=lang, word_timestamps=True, beam_size=1,
                                            condition_on_previous_text=False)
         heard = [(w.word, float(w.start)) for sg in segs for w in (sg.words or [])]
     except Exception as exc:
