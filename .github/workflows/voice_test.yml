@@ -9,13 +9,17 @@ on:
         required: false
         default: ""
       voice:
-        description: "Kokoro voice id"
+        description: "Kokoro voice id, or gemini:Voice1,Voice2 for Gemini TTS samples"
         required: false
         default: "am_michael"
       speed:
         description: "Speaking speed"
         required: false
         default: "1.0"
+      style:
+        description: "Gemini voices only: speaking style note"
+        required: false
+        default: ""
 
 jobs:
   voice:
@@ -26,6 +30,8 @@ jobs:
       GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
       GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
       SHEET_ID: ${{ secrets.SHEET_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,4 +48,5 @@ jobs:
           LINES: ${{ inputs.lines }}
           VOICE: ${{ inputs.voice }}
           SPEED: ${{ inputs.speed }}
+          STYLE: ${{ inputs.style }}
         run: python voice_test.py
