@@ -1,0 +1,51 @@
+# Project memory: reels-autoposter
+
+Durable, approved knowledge about this system. Read this first in every new session; add to the
+Decision log whenever something is decided. Keep it short and factual.
+
+## What it is
+Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions with a Google Sheet
+("Reels Queue") as the queue and log, and Google Drive for renders and published copies
+("Reels Autoposter - Published", one .mp4 + .json sidecar per post).
+
+## Pages (config.json)
+| Key | Page | Language / audience | Notes |
+|---|---|---|---|
+| US | Throttle Decoded | US English, cars | narrator: garage buddy (Algenib) |
+| UAE | Stay Decoded | English, hotels/travel | |
+| PH | Alaga Explained | Taglish, pets (PH) | best organic grower, PH audience |
+| PAWS | Pawside Giggles | English, pets | |
+| DEM | Navigating Dementia Together | English, caregivers | ~60% US viewers; narrator stays gentle |
+| FIN | Pera Decoded | Taglish, money (PH/OFW) | |
+| HOME | Home Hacks Decoded | English, home tips | |
+| HIST | History Decoded | US English, world history | narrator: amazed friend (Fenrir) |
+| KAS | Chika ng Kasaysayan | Taglish, PH history | not live until FB_PAGE_ID_KAS / FB_TOKEN_KAS exist; narrator Tita Chari (Laomedeia, female) |
+
+## How a Reel is made (explainer.py)
+1. Gemini writes the script: 3 hook options -> judge picks one; word budget (image.max_words, default 70; lists +25).
+2. Fact-check on pages with image.fact_check.
+3. Clips: Pixabay/Pexels search + Gemini thumbnail check; Wikimedia Commons public-domain images (image.commons),
+   file name must contain the person/place; image.place_guard rejects clips tagged with another place.
+   No fitting clip -> post photo still -> reuse another moment of an on-topic clip -> page's generic clip (last resort).
+4. Voice: Gemini TTS (page voice + voice_style); Kokoro only where kokoro_voice is set.
+5. Captions and scene cuts follow the real speech (faster-whisper word timing, falls back to an estimate).
+6. Remotion renders overlays; hook text is visible from frame 0.
+7. Gemini video QA watches the result; "block" -> safer photo Reel instead.
+
+## Standing rules
+- Free or practical first; paid tools/boosts only with the owner's approval and the exact cost shown.
+- No boosting for now (Nov 2026); grow with hooks, retention, more posts, follower invites.
+- Never invent facts, quotes, dates or citations; label legends ("ayon sa kuwento").
+- Historical pages: no living politicians or modern party politics.
+- Never handle passwords, tokens or keys; the owner adds secrets in GitHub himself.
+- Nothing public or irreversible without the owner's go-ahead; previews (images.yml, mode=preview) are safe.
+- Owner reads on his phone: short updates, normal hyphens only, full URLs in every instruction.
+- Owner's name and email never appear on anything followers see.
+
+## Decision log
+- 2026-11-01: About 6 in 10 Reels were falling back to static cards (one scene without a clip killed the Reel). Fixed with scene-level fallbacks; scripts shortened (Reels ran 45-70 s, viewers left at 2-7 s).
+- 2026-11-01: Hook rules: hook on the first spoken word, same idea on screen and spoken, open loop + mid re-hook, loop ending, moving scene-1 shot.
+- 2026-11-01: Sheets 429 errors -> gspread client retries on 429.
+- 2026-11-02: Narrator personas (image.narrator) for KAS, HIST, US. Tita Chari must be a woman: Laomedeia.
+- 2026-11-02: Captions synced to real speech with faster-whisper.
+- Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.
