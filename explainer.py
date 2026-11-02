@@ -170,7 +170,9 @@ def write_script(page, card):
     subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
     extra = page["image"].get("extra_rules")
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
-                           style_block=page["image"].get("style_block") or TRUST_BLOCK,
+                           style_block=(page["image"].get("style_block") or TRUST_BLOCK) + (
+                               "\n\nNARRATOR (write every spoken line in this character's voice):\n"
+                               + page["image"]["narrator"] if page["image"].get("narrator") else ""),
                            subject_rule=SUBJECT_RULE.format(subject=subject) if page["image"].get("reel_subject")
                            else "              Pick footage that clearly shows the place, object or era named in the scene.",
                            extra_rules=("\nPage-specific rules (they override the general rules above where they "

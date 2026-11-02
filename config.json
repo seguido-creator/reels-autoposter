@@ -32,8 +32,8 @@
       "brand": "Throttle Decoded",
       "follow_cta": "Follow for one car fact a day",
       "follow_line": "Follow Throttle Decoded for one car fact most drivers don't know, every day.",
-      "voice": "Charon",
-      "voice_style": "confident, energetic car-guy storyteller, clear and punchy",
+      "voice": "Algenib",
+      "voice_style": "a gravelly, confident garage buddy showing a friend something cool under the hood: relaxed but punchy, a grin in the voice, slows down for the 'here's the trick' moment; casual American English",
       "audience": "Viewers in the United States, mostly 18-45, scrolling Facebook Reels for quick entertainment.",
       "language": "Casual American English. Short, punchy, conversational.",
       "source_folders": [
@@ -66,6 +66,7 @@
           "upper_headline": true,
           "line_height": 1.1
         },
+        "narrator": "You are the GARAGE BUDDY: the friend who's been wrenching on cars for years and loves showing people the trick. Signature opener style: 'Pop the hood, let me show you something.' or 'Here's what nobody tells you about...'. Casual, a little cheeky, talk to 'you', use car-guy slang lightly (no swearing), explain the WHY like you're pointing at the part.",
         "reel_mode": "explainer",
         "reel_fallback_query": "sports car road",
         "signals_hashtags": ["carfacts", "cartok", "carsoftiktok"],
@@ -487,6 +488,7 @@
           6
         ],
         "reel_all_slots": true,
+        "narrator": "You are the friend who just discovered something wild about history and can't believe it. Signature opener style: 'Okay, this one broke my brain...' or 'Wait. These happened at the SAME time?'. Show genuine amazement, use short punchy sentences, talk to 'you', build up then reveal. Never exaggerate the facts; the excitement is in the delivery.",
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
         "signals_hashtags": ["historyfacts", "historytok", "didyouknowhistory"],
@@ -497,8 +499,8 @@
         "reel_intro": "magazine",
         "rec_zoom": true
       },
-      "voice": "Charon",
-      "voice_style": "calm, warm, intriguing documentary storyteller, clear and unhurried"
+      "voice": "Fenrir",
+      "voice_style": "an excited friend who just discovered a mind-blowing history fact and can't wait to tell you: energetic, amazed, fast when building up, a beat of silence before the reveal, then a delighted punchline; clear American English"
     },
     {
       "key": "KAS",
@@ -510,8 +512,8 @@
       "follow_line": "I-follow ang Chika ng Kasaysayan para sa totoong chika ng kasaysayan araw-araw, mga mars.",
       "audience": "Filipinos in the Philippines and abroad (OFWs, Fil-Ams), adults of all ages who love a good kuwento and want to know the real, human side of Philippine history and its heroes.",
       "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk on Facebook, in the voice of a kuwentista tita sharing juicy but TRUE chika: warm, playful, a little dramatic ('Mga mars, alam n'yo ba...', 'Teka, may twist pa', 'Ito na, ito na'). Keep names, places and years clear.",
-      "voice": "Sulafat",
-      "voice_style": "masayang kuwentista tita sharing chika with friends: warm, playful, expressive and a little dramatic, natural Taglish, clear on names and years",
+      "voice": "Sadachbia",
+      "voice_style": "Tita Chari, a lively Filipina tita telling juicy chika to her amigas: animated, playful, expressive, quick when the story heats up, a dramatic pause and a softer voice right before the twist, natural Taglish, clear on names and years",
       "image": {
         "slots": [
           "12:00",
@@ -550,6 +552,7 @@
           6
         ],
         "reel_all_slots": true,
+        "narrator": "You are TITA CHARI, a chismosa-but-accurate Filipina tita who loves history. Signature opener style: 'Mga mars, upo muna kayo...' or 'Ito na, ito na...'. React to the story like real chika ('Ay, grabe!', 'Ang sakit, di ba?', 'Teka, may twist pa!'), talk directly to the viewer, tease the twist before revealing it. Every fact stays accurate; the drama is in HOW you tell it, never in invented details.",
         "reel_mode": "explainer",
         "reel_fallback_query": "old stone church",
         "signals_hashtags": [
