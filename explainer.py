@@ -590,6 +590,71 @@ def _seek(src, offset):
     return (offset % dur) if dur > 1 else 0.0
 
 
+_WHISPER = {}
+
+
+def _norm_word(w):
+    import unicodedata
+    w = unicodedata.normalize("NFKD", str(w)).encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z0-9]", "", w)
+
+
+def align_words(wav, script_words, page):
+    """Start time (seconds from the start of the voice-over) of every script word, found by listening to the
+    audio with a small Whisper model (faster-whisper, MIT, CPU) and matching what it heard to the script.
+    Words it missed are filled in between their neighbours. Returns None when alignment is not possible, and
+    the old estimate is used instead."""
+    if not script_words or os.environ.get("ALIGN_CAPTIONS", "1") == "0":
+        return None
+    try:
+        from faster_whisper import WhisperModel
+        if "m" not in _WHISPER:
+            _WHISPER["m"] = WhisperModel(os.environ.get("ALIGN_MODEL", "base"), device="cpu", compute_type="int8")
+        lang = "tl" if "taglish" in str(page["image"].get("language") or page.get("language") or "").lower() else "en"
+        segs, _ = _WHISPER["m"].transcribe(str(wav), language=lang, word_timestamps=True, beam_size=1,
+                                           condition_on_previous_text=False)
+        heard = [(w.word, float(w.start)) for sg in segs for w in (sg.words or [])]
+    except Exception as exc:
+        log(f"[{page['key']}] caption alignment skipped ({str(exc)[:100]})")
+        return None
+    return match_times(script_words, heard, page["key"])
+
+
+def match_times(script_words, heard, key=""):
+    """Maps heard (word, start) pairs onto the script words; interpolates the gaps; None if too little matched."""
+    import difflib
+    a = [_norm_word(w) for w in script_words]
+    b = [_norm_word(w) for w, _ in heard]
+    times = [None] * len(a)
+    for i, j, n in difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks():
+        for k in range(n):
+            if a[i + k]:
+                times[i + k] = heard[j + k][1]
+    known = [i for i, t in enumerate(times) if t is not None]
+    if len(known) < max(3, 0.35 * len(a)):
+        log(f"[{key}] caption alignment: only {len(known)}/{len(a)} words matched, using estimate")
+        return None
+    # keep anchors in order (drop any that go backwards)
+    clean, last = [], -1.0
+    for i in known:
+        if times[i] > last:
+            clean.append(i)
+            last = times[i]
+        else:
+            times[i] = None
+    first, lastk = clean[0], clean[-1]
+    rate = (times[lastk] - times[first]) / max(lastk - first, 1)
+    for i in range(first):
+        times[i] = max(0.0, times[first] - rate * (first - i))
+    for x, y in zip(clean, clean[1:]):
+        for i in range(x + 1, y):
+            times[i] = times[x] + (times[y] - times[x]) * (i - x) / (y - x)
+    for i in range(lastk + 1, len(a)):
+        times[i] = times[lastk] + rate * (i - lastk)
+    log(f"[{key}] caption alignment: {len(clean)}/{len(a)} words matched to the audio")
+    return [round(t, 3) for t in times]
+
+
 def render(page, script, clips, out_path, clip_paths=None):
     """clip_paths lets tests pass local files instead of downloading."""
     import transform
@@ -604,6 +669,17 @@ def render(page, script, clips, out_path, clip_paths=None):
     shares = [w / sum(words) * vo_len for w in words]
     shares[0] += lead
     shares[-1] += tail
+    # real word timings from the audio (captions and scene cuts follow the actual speech, not an estimate)
+    script["_word_times"] = align_words(wav, full.split(), page)
+    if script["_word_times"]:
+        starts, k = [], 0
+        for n in [len(str(s["vo"]).split()) for s in script["scenes"]]:
+            starts.append(script["_word_times"][min(k, len(full.split()) - 1)])
+            k += n
+        cuts = [0.0] + [lead + max(t - 0.12, 0) for t in starts[1:]] + [total]
+        aligned = [b - a for a, b in zip(cuts, cuts[1:])]
+        if all(d > 0.4 for d in aligned):
+            shares = aligned
 
     segs = []
     for i, (d, clip) in enumerate(zip(shares, clips)):
@@ -712,8 +788,10 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
     allw = [w for ws in scene_words for w in ws]
     weights = [len(w) + 2 for w in allw] or [1]
     tot = sum(weights)
-    for w, wt in zip(allw, weights):
-        words.append({"w": w, "t": round(spoken_t, 3)})
+    real = script.get("_word_times")
+    for i, (w, wt) in enumerate(zip(allw, weights)):
+        t = lead + real[i] if real and i < len(real) else spoken_t
+        words.append({"w": w, "t": round(t, 3)})
         spoken_t += vo_len * wt / tot
     brand = page["brand"]
     mono = th.get("monogram") or page["image"].get("monogram") or "".join(x[0] for x in brand.split()[:2]).upper()
