@@ -353,7 +353,46 @@ def tts_text(text, page):
     return text
 
 
+_HEAR = {}
+
+
+def _heard_words(wav):
+    """Words a Whisper model (faster-whisper, CPU) hears in the voice-over, lower-case, Tagalog mode."""
+    from faster_whisper import WhisperModel
+    import numpy as np
+    if "m" not in _HEAR:
+        _HEAR["m"] = WhisperModel(os.environ.get("PRONOUNCE_MODEL", "small"), device="cpu", compute_type="int8")
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                         capture_output=True, check=True, timeout=120).stdout
+    segs, _ = _HEAR["m"].transcribe(np.frombuffer(raw, dtype=np.float32), language="tl", beam_size=5)
+    return re.findall(r"[a-zñ'-]+", " ".join(sg.text for sg in segs).lower())
+
+
 def speak(text, page, out_wav):
+    """Voice-over with a pronunciation guard: when the text has a word listed in config "never_heard"
+    (word -> regex of the wrong way to say it, e.g. manunulat said as "manunulot", a swindler), Whisper listens
+    to the take; a wrong take is redone (up to 3 takes) and if it stays wrong the voice-over fails, so that Reel
+    is never posted. Fails closed: if the check itself cannot run, nothing is posted either."""
+    rules = {w: rx for w, rx in (load_config().get("never_heard") or {}).items()
+             if re.search(rf"(?i)\b{re.escape(w)}\b", text)}
+    for take in range(3):
+        secs = _speak_take(text, page, out_wav)
+        if not rules:
+            return secs
+        try:
+            heard = _heard_words(out_wav)
+        except Exception as exc:
+            raise RuntimeError(f"pronunciation check could not run ({str(exc)[:100]}), not using this voice-over")
+        wrong = sorted({h for h in heard for rx in rules.values() if re.fullmatch(rx, h)})
+        if not wrong:
+            if take:
+                log(f"pronunciation OK on take {take + 1} ({', '.join(rules)})")
+            return secs
+        log(f"voice said {wrong} instead of {list(rules)} (take {take + 1}), recording again")
+    raise RuntimeError(f"voice kept mispronouncing {list(rules)}; this Reel is not posted")
+
+
+def _speak_take(text, page, out_wav):
     """Voice -> 24 kHz mono WAV file. Pages with "kokoro_voice" use the free Kokoro model first; Gemini TTS is the
     default and the backup."""
     kv = page.get("kokoro_voice")
