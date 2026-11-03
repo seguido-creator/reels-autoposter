@@ -48,7 +48,7 @@ Return JSON with exactly these keys:
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
 {subject_rule}
-{commons_field}{timeline_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
+{commons_field}{map_field}{timeline_field}{highlight_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
 
 TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof by logic):
@@ -72,6 +72,18 @@ TIMELINE_FIELD = """"timeline": a list for an animated timeline shown at the end
               happened: 2 to 5 objects in chronological order, each {"year": "1096" or "around 1325" or "1500s" (max 14
               characters), "label": "max 4 words"}. Every year must match the voice-over exactly. [] if the video is not
               about dates.
+"""
+
+MAP_FIELD = """    "map": (optional, at most 2 scenes) only when the scene is about a specific real place on Earth: an object
+              {"place": "Giza, Egypt", "lat": 29.98, "lon": 31.13} with the place's accurate coordinates; add
+              "from_place", "from_lat", "from_lon" only for a real journey or route between two places. Otherwise null.
+"""
+
+HIGHLIGHT_FIELD = """"highlights": 2-6 key names and dates copied exactly as they are spoken in the voice-over (people, places, years),
+              shown in the accent colour in the captions,
+"""
+
+PAIR_NOTE = """              Mark the two events that the twist connects with "pair": true (exactly two items).
 """
 
 HOOK_RULES = """
@@ -145,6 +157,14 @@ LIST_RULES = """- FORMAT: a numbered list of exactly {n} practical points ("Numb
 W, H, FPS = 1080, 1920, 30
 
 
+def pick_opener(page):
+    """Rotates the page's signature openers so the same one never runs twice in a row (posts are hours apart,
+    and the slot gaps never share a multiple of the list length)."""
+    import time
+    ops = page["image"].get("openers") or []
+    return ops[int(time.time() // 3600) % len(ops)] if ops else ""
+
+
 def write_script(page, card):
     import transform
     from google.genai import types
@@ -166,13 +186,17 @@ def write_script(page, card):
         details += ("\nA fact-checker rejected the previous draft for these reasons - fix every one: "
                     + "; ".join(map(str, card["_issues"])))
     as_list = use_list(page, card)
+    casefile = page["image"].get("look") == "casefile"
+    opener = pick_opener(page)
     n = random.choice([3, 3, 4])  # short lists hold viewers; 5-point Reels ran 55-70s
     subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
     extra = page["image"].get("extra_rules")
     prompt = PROMPT.format(brand=page["brand"], audience=page["audience"],
                            style_block=(page["image"].get("style_block") or TRUST_BLOCK) + (
                                "\n\nNARRATOR (write every spoken line in this character's voice):\n"
-                               + page["image"]["narrator"] if page["image"].get("narrator") else ""),
+                               + page["image"]["narrator"] if page["image"].get("narrator") else "") + (
+                               f"\nOpen this Reel with a first line in the spirit of: \"{opener}\" (reword it naturally; "
+                               "the hook itself must still land within the first words)." if opener else ""),
                            subject_rule=SUBJECT_RULE.format(subject=subject) if page["image"].get("reel_subject")
                            else "              Pick footage that clearly shows the place, object or era named in the scene.",
                            extra_rules=("\nPage-specific rules (they override the general rules above where they "
@@ -186,7 +210,10 @@ def write_script(page, card):
                            num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
                            if as_list else "",
                            commons_field=COMMONS_FIELD if page["image"].get("commons") else "",
-                           timeline_field=TIMELINE_FIELD if page["image"].get("timeline") else "")
+                           map_field=MAP_FIELD if casefile else "",
+                           highlight_field=HIGHLIGHT_FIELD if casefile else "",
+                           timeline_field=(TIMELINE_FIELD + (PAIR_NOTE if casefile else ""))
+                           if page["image"].get("timeline") else "")
     base = int(page["image"].get("max_words") or 70)  # Taglish pages speak fewer words per second
     budget = base + 25 if as_list else base
     ask = prompt
@@ -231,7 +258,7 @@ def clean_timeline(items):
             continue
         year, label = str(it.get("year") or "").strip(), str(it.get("label") or "").strip()
         if year and label and len(year) <= 14:
-            out.append({"year": year, "label": " ".join(label.split()[:5])[:32]})
+            out.append({"year": year, "label": " ".join(label.split()[:5])[:32], "pair": bool(it.get("pair"))})
     return out if 2 <= len(out) <= 5 else []
 
 
@@ -765,6 +792,68 @@ REMOTION_DIR = Path(__file__).resolve().parent / "remotion"
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
 
 
+def _num(x, lo, hi):
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if lo <= v <= hi else None
+
+
+def casefile_props(page, script, pub, total):
+    """Extra props for the "case file" look: theme, stamp, file label, map per scene, highlights, sound files."""
+    import shutil
+    img = page["image"]
+    if img.get("look") != "casefile":
+        return {}
+    cf = img.get("casefile") or {}
+    full = " ".join(str(s.get("vo", "")) for s in script.get("scenes", [])).lower()
+    hl = [str(h).strip() for h in (script.get("highlights") or []) if str(h).strip() and str(h).strip().lower() in full][:6]
+    maps = []
+    for sc in script.get("scenes", []):
+        m = sc.get("map") if isinstance(sc.get("map"), dict) else None
+        lat, lon = (_num(m.get("lat"), -85, 85), _num(m.get("lon"), -180, 180)) if m else (None, None)
+        if m and lat is not None and lon is not None and str(m.get("place") or "").strip():
+            mm = {"place": str(m["place"]).strip()[:34], "lat": lat, "lon": lon}
+            flat, flon = _num(m.get("from_lat"), -85, 85), _num(m.get("from_lon"), -180, 180)
+            if flat is not None and flon is not None and str(m.get("from_place") or "").strip():
+                mm.update(fromPlace=str(m["from_place"]).strip()[:24], fromLat=flat, fromLon=flon)
+            maps.append(mm if sum(1 for x in maps if x) < 2 else None)
+        else:
+            maps.append(None)
+    music = None
+    try:
+        import sound
+        sound.sfx(pub)
+        sound.ambient_music(pub / "music.wav", total)
+        music = "music.wav"
+    except Exception as exc:
+        log(f"[{page['key']}] sound design skipped ({str(exc)[:100]})")
+    cap = FONT_DIR / (cf.get("caption_font") or "Inter-SemiBold.ttf")
+    shutil.copy(cap if cap.exists() else FONT_DIR / "Poppins-Bold.ttf", pub / "caption.ttf")
+    return {
+        "look": "casefile", "maps": maps, "highlights": hl, "music": music, "sfx": music is not None,
+        "stamp": str(cf.get("stamp") or "LITTLE-KNOWN"),
+        "fileLabel": f"{cf.get('file_word') or 'FILE'} {int(script.get('_file_no') or 1):03d}",
+        "cf": {"accent": cf.get("accent", "#E0A33A"), "paper": cf.get("paper", "#EADBC0"),
+               "paperDark": cf.get("paper_dark", "#D3BC92"), "ink": cf.get("ink", "#2A1F14"),
+               "stamp": cf.get("stamp_color", "#B3261E"), "text": "#FFFFFF", "shade": cf.get("shade", "#6B4A22")},
+    }
+
+
+def master_audio(path):
+    """Loudness mastering (about -14 LUFS, the level Facebook/YouTube normalise to), video copied untouched."""
+    import subprocess
+    tmp = Path(str(path) + ".m.mp4")
+    r = subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path), "-c:v", "copy", "-af",
+                        "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", "48000", "-c:a", "aac", "-b:a", "160k",
+                        "-movflags", "+faststart", str(tmp)], capture_output=True, text=True, timeout=300)
+    if r.returncode == 0 and tmp.exists():
+        tmp.replace(path)
+    else:
+        log(f"audio mastering skipped ({(r.stderr or '')[-120:]})")
+
+
 def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_path, work):
     """Animated overlays (hook, counters, keyword pops, karaoke captions, outro) via Remotion."""
     import shutil
@@ -808,6 +897,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
         "scenes": scenes, "words": words,
         "intro": page["image"].get("reel_intro") or "pill", "rec": bool(page["image"].get("rec_zoom")),
         "timeline": script.get("timeline") or [],
+        **casefile_props(page, script, pub, total),
         "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
                   "bgTop": th.get("bg_top", "#111111"), "bgBottom": th.get("bg_bottom", "#000000"),
                   "text": th.get("text", "#FFFFFF"), "titleFont": "title.ttf", "bodyFont": "body.ttf",
@@ -820,10 +910,14 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
            f"--concurrency={max(1, os.cpu_count() or 2)}", "--log=error"]
     if os.environ.get("REMOTION_BROWSER"):
         cmd.append(f"--browser-executable={os.environ['REMOTION_BROWSER']}")
+    if os.environ.get("REMOTION_CHROME_MODE"):
+        cmd.append(f"--chrome-mode={os.environ['REMOTION_CHROME_MODE']}")
     r = subprocess.run(cmd, cwd=REMOTION_DIR, capture_output=True, text=True,
                        timeout=int(os.environ.get("REMOTION_TIMEOUT", "2400")))
     if r.returncode != 0 or not Path(out_path).exists():
         raise RuntimeError((r.stderr or r.stdout or "no output")[-600:])
+    if page["image"].get("look") == "casefile":
+        master_audio(out_path)
 
 
 def follow_up(page, script, card):
@@ -856,6 +950,8 @@ def make(page, card, out_path, used_ids=()):
             if res is not True:
                 raise RuntimeError("script failed fact-check twice: " + "; ".join(map(str, res))[:300])
     follow_up(page, script, card)
+    m = re.search(r"#(\d+)", str(card.get("_series") or ""))
+    script["_file_no"] = int(m.group(1)) if m else int(__import__("datetime").date.today().strftime("%j"))
     clips = find_clips(page, script["scenes"], used_ids, card.get("_still"))
     secs = render(page, script, clips, out_path)
     qa = video_qa(page, out_path, script, card)  # raises when the finished Reel must not be posted

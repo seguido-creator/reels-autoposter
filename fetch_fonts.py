@@ -24,6 +24,8 @@ FONTS = {
     "Poppins-Regular.ttf": ("poppins", 400),
     "Poppins-Medium.ttf": ("poppins", 500),
     "Poppins-Bold.ttf": ("poppins", 700),
+    "Inter-SemiBold.ttf": ("inter", 600),
+    "DMSerifDisplay.ttf": ("dm-serif-display", 400),
 }
 
 

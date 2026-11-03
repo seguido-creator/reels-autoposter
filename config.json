@@ -492,13 +492,48 @@
         "list_share": 0,
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
-        "signals_hashtags": ["historyfacts", "historytok", "didyouknowhistory"],
+        "signals_hashtags": [
+          "historyfacts",
+          "historytok",
+          "didyouknowhistory"
+        ],
         "reel_subject": "",
         "fact_check": true,
         "commons": true,
         "timeline": true,
         "reel_intro": "magazine",
-        "rec_zoom": true
+        "rec_zoom": true,
+        "preview_overrides": {
+          "voice": "Fenrir",
+          "voice_style": "a calm, low, slightly conspiratorial storyteller leaning in to tell you something most people never learned: unhurried, warm, quiet intensity, short pauses before reveals, never shouting, clear American English",
+          "image": {
+            "look": "casefile",
+            "narrator": "You are THE SECRET-TELLER: a calm, low, slightly conspiratorial storyteller who leans in to tell the viewer something most people never learned. Quiet confidence, short sentences, a pause before the reveal. Tell ONE story with a twist revealed near the end (never a list, never 'number one'); points are woven in ('and then...', 'but here is the part almost nobody connects...'). Hook on the first spoken word, an open loop in the first line, a re-hook halfway, and a last line that loops back to the first. HONESTY RULE: the 'secret' is a real, well-documented but little-known fact found in standard references. Never say 'they don't want you to know', never imply a cover-up or conspiracy, never invent or exaggerate; legends and disputed accounts are clearly labelled as legend or disputed ('according to legend', 'historians still debate').",
+            "openers": [
+              "Most people never learned this in school...",
+              "Here's something your history teacher skipped...",
+              "Almost nobody connects these two dates...",
+              "Lean in, because this one's strange..."
+            ],
+            "max_words": 72,
+            "list_share": 0,
+            "casefile": {
+              "stamp": "LITTLE-KNOWN",
+              "file_word": "FILE",
+              "caption_font": "Inter-SemiBold.ttf",
+              "paper": "#EADBC0",
+              "paper_dark": "#D3BC92",
+              "ink": "#2A1F14",
+              "stamp_color": "#B3261E",
+              "accent": "#E8B04B",
+              "shade": "#6B4A22"
+            },
+            "theme": {
+              "title_font": "Playfair-Bold.ttf",
+              "body_font": "Inter-SemiBold.ttf"
+            }
+          }
+        }
       },
       "voice": "Fenrir",
       "voice_style": "an excited friend who just discovered a mind-blowing history fact and can't wait to tell you: energetic, amazed, fast when building up, a beat of silence before the reveal, then a delighted punchline; clear American English"
@@ -539,7 +574,7 @@
           "on_accent": "#FFFFFF",
           "motif": "circles",
           "title_font": "Playfair-Bold.ttf",
-          "body_font": "Poppins-Medium.ttf",
+          "body_font": "Inter-SemiBold.ttf",
           "tag_font": "Poppins-Bold.ttf",
           "line_height": 1.15
         },
@@ -553,7 +588,7 @@
           6
         ],
         "reel_all_slots": true,
-        "narrator": "You are TITA CHARI, a chismosa-but-accurate Filipina tita who loves history. Signature opener style: 'Mga mars, upo muna kayo...' or 'Ito na, ito na...'. React to the story like real chika ('Ay, grabe!', 'Ang sakit, di ba?', 'Teka, may twist pa!'), talk directly to the viewer, tease the twist before revealing it. Every fact stays accurate; the drama is in HOW you tell it, never in invented details. Tell it as one flowing story, never as a numbered list ('number one, number two'); several points are woven in naturally ('and then...', 'pero teka...').",
+        "narrator": "You are TITA CHARI, a chismosa-but-accurate Filipina tita who loves history. Signature opener style: 'Mga mars, upo muna kayo...' or 'Ito na, ito na...'. React to the story like real chika ('Ay, grabe!', 'Ang sakit, di ba?', 'Teka, may twist pa!'), talk directly to the viewer, tease the twist before revealing it. Every fact stays accurate; the drama is in HOW you tell it, never in invented details. Tell it as one flowing story, never as a numbered list ('number one, number two'); several points are woven in naturally ('and then...', 'pero teka...'). Same honesty rule as a good historian: the chika is real, documented history; no invented gossip, no conspiracy framing, legends labelled 'ayon sa kuwento'. Tell one story with a twist near the end.",
         "reel_mode": "explainer",
         "reel_fallback_query": "old stone church",
         "signals_hashtags": [
@@ -569,7 +604,25 @@
         "rec_zoom": true,
         "list_share": 0,
         "max_words": 55,
-        "place_guard": true
+        "place_guard": true,
+        "look": "casefile",
+        "openers": [
+          "Alam mo ba, mars...",
+          "Mga mars, upo muna kayo...",
+          "Hindi 'to itinuro sa school, pero...",
+          "Ito na, ito na..."
+        ],
+        "casefile": {
+          "stamp": "CHIKA FILE",
+          "file_word": "KASO",
+          "caption_font": "Inter-SemiBold.ttf",
+          "paper": "#F3DEC0",
+          "paper_dark": "#E2BF8E",
+          "ink": "#3A2210",
+          "stamp_color": "#C8102E",
+          "accent": "#FFB547",
+          "shade": "#8A4B1E"
+        }
       }
     }
   ],

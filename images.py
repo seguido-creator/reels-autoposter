@@ -720,7 +720,24 @@ def save_published(page, mp4, card, caption, video_id, rnote):
         return "; save FAILED"
 
 
+def with_preview_overrides(page):
+    """A page's "preview_overrides" (top-level keys and image.* keys) apply ONLY to preview runs, so a new style
+    can be tried on a live page without anything public changing until it is approved and moved into the page."""
+    ov = page.get("image", {}).get("preview_overrides") or {}
+    if not ov:
+        return page
+    img = dict(page["image"], **(ov.get("image") or {}))
+    if "theme" in (ov.get("image") or {}):
+        img["theme"] = dict(page["image"].get("theme") or {}, **ov["image"]["theme"])
+    out = dict(page, **{k: v for k, v in ov.items() if k != "image"})
+    out["image"] = img
+    log(f"[{page['key']}] preview: using preview_overrides ({', '.join(sorted(set(ov) | set(ov.get('image') or {})))})")
+    return out
+
+
 def process(page, cfg, ws, rows, now, force=False, preview=False):
+    if preview:
+        page = with_preview_overrides(page)
     page_id = os.environ.get(page["page_id_env"], "").strip()
     token = os.environ.get(page["token_env"], "").strip()
     if not preview and (not page_id or not token):
