@@ -4,6 +4,10 @@
    and the branded outro on top. */
 import React from "react";
 import {
+  Atmosphere, CaseIntro, SentenceCaptions, EvidenceTag, MapCard, CaseTimeline, CaseOutro, CaseSound,
+  CFMap, CFTheme, CaseFileProps,
+} from "./CaseFile";
+import {
   AbsoluteFill, Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig,
   interpolate, spring,
 } from "remotion";
@@ -19,8 +23,10 @@ export type ReelProps = {
   hook: string; brand: string; monogram: string; outro: string;
   totalN: number; scenes: Scene[]; words: Word[]; theme: Theme;
   intro?: "pill" | "magazine"; rec?: boolean; timeline?: TimeItem[];
+  look?: "casefile"; maps?: (CFMap | null)[]; highlights?: string[]; music?: string | null; sfx?: boolean;
+  stamp?: string; fileLabel?: string; cf?: CFTheme;
 };
-export type TimeItem = { year: string; label: string };
+export type TimeItem = { year: string; label: string; pair?: boolean };
 
 export const defaultProps: ReelProps = {
   total: 10, lead: 0.3, video: "joined.mp4", audio: "vo.wav", hook: "Hook", brand: "Brand",
@@ -292,7 +298,64 @@ const Outro: React.FC<{ p: ReelProps }> = ({ p }) => {
   );
 };
 
+/* ---------- "case file" look (History Decoded / Chika ng Kasaysayan) ---------- */
+const CaseFileReel: React.FC<{ p: ReelProps }> = ({ p }) => {
+  const { fps } = useVideoConfig();
+  const fr = (s: number) => Math.max(0, Math.round(s * fps));
+  const frame = useCurrentFrame();
+  const tt = frame / fps;
+  const outroLen = 1.8, introLen = 3.2;
+  const cf = p.cf!;
+  const cp: CaseFileProps = {
+    total: p.total, lead: p.lead, hook: p.hook, brand: p.brand, words: p.words, theme: cf,
+    scenes: p.scenes.map((sc, i) => ({ ...sc, map: (p.maps || [])[i] || null })),
+    timeline: p.timeline || [], highlights: p.highlights || [], stamp: p.stamp || "LITTLE-KNOWN",
+    fileLabel: p.fileLabel || "FILE 001", outro: p.outro, monogram: p.monogram, sfx: !!p.sfx, music: p.music || null,
+  };
+  const hasTimeline = cp.timeline.length >= 2 && p.scenes.length > 0;
+  const last = p.scenes[p.scenes.length - 1];
+  const tlStart = hasTimeline ? Math.max(introLen + 0.2, Math.min(last.start + 0.2, p.total - outroLen - 4.8)) : p.total;
+  const tlLen = hasTimeline ? Math.max(1, fr(p.total - outroLen) - fr(tlStart)) : 1;
+  // slow push-in on every shot (Ken Burns), restarting at each cut
+  const cur = p.scenes.find((sc) => tt >= sc.start && tt < sc.end) || last;
+  const prog = cur ? Math.min(1, Math.max(0, (tt - cur.start) / Math.max(0.5, cur.end - cur.start))) : 0;
+  const push = 1.02 + 0.06 * prog;
+  const maps = cp.scenes.map((sc, i) => ({ sc, i })).filter(({ sc }) => sc.map && sc.start >= introLen - 0.2 && sc.start < tlStart - 0.5);
+  const mapLen = (sc: { start: number; end: number }) => Math.max(fr(1.4), Math.min(fr(2.8), fr(tlStart) - fr(sc.start)));
+  const busy = (t: number) => maps.some(({ sc }) => t >= sc.start && t < sc.start + 2.8);
+  const fontFaces = `
+@font-face{font-family:Title;src:url(${staticFile(p.theme.titleFont)});}
+@font-face{font-family:Caption;src:url(${staticFile("caption.ttf")});}`;
+  return (
+    <AbsoluteFill style={{ backgroundColor: "#0b0806" }}>
+      <style>{fontFaces}</style>
+      <AbsoluteFill style={{ transform: `scale(${push})`, filter: "sepia(.22) saturate(.86) contrast(1.06) brightness(.97)" }}>
+        <OffthreadVideo src={staticFile(p.video)} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </AbsoluteFill>
+      <Atmosphere t={cf} />
+      <Sequence from={fr(p.lead)}><Audio src={staticFile(p.audio)} /></Sequence>
+      <CaseSound p={cp} cuts={p.scenes.slice(1).map((sc) => sc.start).filter((s) => s > introLen && s < p.total - outroLen)}
+        papers={[...maps.map(({ sc }) => sc.start), ...(hasTimeline ? [tlStart] : [])]} />
+      <Sequence durationInFrames={fr(introLen)}><CaseIntro p={cp} len={fr(introLen)} /></Sequence>
+      {p.scenes.map((sc, i) => sc.key && sc.start >= introLen && sc.end <= tlStart && !busy(sc.start) ? (
+        <Sequence key={`k${i}`} from={fr(sc.start)} durationInFrames={Math.min(fr(1.8), Math.max(1, fr(sc.end - sc.start)))}>
+          <EvidenceTag text={sc.key} t={cf} len={Math.min(fr(1.8), Math.max(1, fr(sc.end - sc.start)))} />
+        </Sequence>
+      ) : null)}
+      {maps.map(({ sc, i }) => (
+        <Sequence key={`m${i}`} from={fr(sc.start)} durationInFrames={mapLen(sc)}>
+          <MapCard m={sc.map!} t={cf} len={mapLen(sc)} />
+        </Sequence>
+      ))}
+      {hasTimeline ? <Sequence from={fr(tlStart)} durationInFrames={tlLen}><CaseTimeline p={cp} len={tlLen} /></Sequence> : null}
+      <SentenceCaptions p={cp} hideUntil={introLen - 0.1} hideFrom={p.total - outroLen} />
+      <Sequence from={fr(p.total - outroLen)}><CaseOutro p={cp} /></Sequence>
+    </AbsoluteFill>
+  );
+};
+
 export const Reel: React.FC<ReelProps> = (p) => {
+  if (p.look === "casefile" && p.cf) return <CaseFileReel p={p} />;
   const { fps } = useVideoConfig();
   const fr = (s: number) => Math.max(0, Math.round(s * fps));
   const outroLen = 1.6;
