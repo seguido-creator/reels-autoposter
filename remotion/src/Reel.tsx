@@ -323,6 +323,9 @@ const CaseFileReel: React.FC<{ p: ReelProps }> = ({ p }) => {
   const maps = cp.scenes.map((sc, i) => ({ sc, i })).filter(({ sc }) => sc.map && sc.start >= introLen - 0.2 && sc.start < tlStart - 0.5);
   const mapLen = (sc: { start: number; end: number }) => Math.max(fr(1.4), Math.min(fr(2.8), fr(tlStart) - fr(sc.start)));
   const busy = (t: number) => maps.some(({ sc }) => t >= sc.start && t < sc.start + 2.8);
+  // evidence tags only for real names and dates (a lone "hours" or "twist" tag looks broken)
+  const hlw = (p.highlights || []).map((h) => h.toLowerCase());
+  const strongKey = (k: string) => /\d/.test(k) || hlw.some((h) => h.includes(k.toLowerCase()) || k.toLowerCase().includes(h));
   const fontFaces = `
 @font-face{font-family:Title;src:url(${staticFile(p.theme.titleFont)});}
 @font-face{font-family:Caption;src:url(${staticFile("caption.ttf")});}`;
@@ -337,7 +340,7 @@ const CaseFileReel: React.FC<{ p: ReelProps }> = ({ p }) => {
       <CaseSound p={cp} cuts={p.scenes.slice(1).map((sc) => sc.start).filter((s) => s > introLen && s < p.total - outroLen)}
         papers={[...maps.map(({ sc }) => sc.start), ...(hasTimeline ? [tlStart] : [])]} />
       <Sequence durationInFrames={fr(introLen)}><CaseIntro p={cp} len={fr(introLen)} /></Sequence>
-      {p.scenes.map((sc, i) => sc.key && sc.start >= introLen && sc.end <= tlStart && !busy(sc.start) ? (
+      {p.scenes.map((sc, i) => sc.key && strongKey(sc.key) && sc.start >= introLen && sc.end <= tlStart && !busy(sc.start) ? (
         <Sequence key={`k${i}`} from={fr(sc.start)} durationInFrames={Math.min(fr(1.8), Math.max(1, fr(sc.end - sc.start)))}>
           <EvidenceTag text={sc.key} t={cf} len={Math.min(fr(1.8), Math.max(1, fr(sc.end - sc.start)))} />
         </Sequence>

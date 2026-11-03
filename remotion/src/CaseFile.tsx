@@ -82,13 +82,12 @@ export const CaseIntro: React.FC<{ p: CaseFileProps; len: number }> = ({ p, len 
           color: t.ink, opacity: 0.75, borderBottom: `3px solid ${t.ink}33`, paddingBottom: 16, marginBottom: 30 }}>
           <span>{p.brand.toUpperCase()}</span><span>{p.fileLabel}</span>
         </div>
-        <div style={{ position: "relative", fontFamily: "Title", fontSize: size, lineHeight: 1.12, color: t.ink }}>
-          <span style={{ opacity: 0 }}>{p.hook}</span>
-          <span style={{ position: "absolute", left: 0, top: 0, right: 0 }}>
-            <span>{p.hook.slice(0, typed)}</span>
-            <span style={{ opacity: caret ? 1 : 0, color: t.stamp }}>|</span>
-            <span style={{ opacity: 0.22 }}>{p.hook.slice(typed)}</span>
-          </span>
+        <div style={{ fontFamily: "Title", fontSize: size, lineHeight: 1.12, color: t.ink }}>
+          {/* one text flow, coloured per letter: typed letters in ink, the rest faint (no layout shift, no ghosts) */}
+          {Array.from(p.hook).map((ch, i) => (
+            <span key={i} style={{ color: i < typed ? t.ink : `${t.ink}30`,
+              boxShadow: caret && i === typed - 1 ? `3px 0 0 0 ${t.stamp}` : "none" }}>{ch}</span>
+          ))}
         </div>
         <div style={{ position: "absolute", right: 0, bottom: -96, transform: `rotate(-8deg) scale(${2.2 - 1.2 * stampS})`,
           opacity: Math.min(1, stampS * 1.3) * 0.9, border: `6px solid ${t.stamp}`, color: t.stamp, borderRadius: 10,
