@@ -235,7 +235,7 @@ def write_script(page, card):
                 log(f"[{page['key']}] explainer script without a usable hook, asking again")
                 continue
             words = sum(len(str(sc["vo"]).split()) for sc in scenes)
-            if words > budget * 1.2 and attempt < 2:
+            if words > budget * 1.1 and attempt < 2:
                 log(f"[{page['key']}] explainer script too long ({words} words, max {budget}), asking again")
                 ask = (prompt + f"\n\nIMPORTANT: your previous script was {words} spoken words. The hard limit is "
                        f"{budget} words in total. Short Reels keep viewers; cut filler, keep the best points.")
@@ -520,7 +520,10 @@ PLACES = {"dubai", "burjkalifa", "burjkhalifa", "uae", "emirate", "emirates", "a
           "newyork", "nyc", "manhattan", "usa", "america", "london", "paris", "france", "italy", "rome", "venice",
           "spain", "germany", "tokyo", "japan", "seoul", "korea", "china", "beijing", "shanghai", "hongkong",
           "singapore", "bangkok", "thailand", "vietnam", "bali", "indonesia", "india", "mumbai", "istanbul",
-          "turkey", "egypt", "cairo", "mosque", "hijab", "quran", "philippines", "manila", "cebu", "philippine"}
+          "turkey", "egypt", "cairo", "mosque", "hijab", "quran", "philippines", "manila", "cebu", "philippine",
+          "scotland", "scottish", "ireland", "irish", "england", "britain", "wales", "highlands", "edinburgh",
+          "netherland", "netherlands", "amsterdam", "berlin", "prague", "russia", "moscow", "mexico", "brazil",
+          "peru", "canada", "australia", "sydney", "africa", "kenya", "morocco", "greece", "athens", "portugal"}
 
 
 def _relevant(tags, want, must=(), guard=False):

@@ -515,7 +515,9 @@
               "Almost nobody connects these two dates...",
               "Lean in, because this one's strange..."
             ],
-            "max_words": 58,
+            "max_words": 46,
+            "place_guard": true,
+            "extra_rules": "This page covers world history, including religious history such as the Bible era. Treat religious figures and events respectfully and factually as history: attribute them to sources ('according to the Gospels', 'historians date this to...'), never preach, argue, rank or mock any belief. No modern party politics, no glorifying war, no graphic violence. Ancient dates are often estimates: say 'around' or 'about' and never give false precision. Only use facts you are highly confident appear in standard encyclopedias; if unsure of a date or detail, leave it out. Never invent quotes. The 'open on a real-life problem' rule does not apply here: open with the most surprising true time comparison instead. A professional-advice caveat is not needed. If you announce a number of items ('these 3 events'), give exactly that many. You may name landmarks, artworks and companies as history (e.g. the Eiffel Tower, The Starry Night, Nintendo), but stock-footage search phrases must describe what can be filmed today (e.g. 'Eiffel Tower Paris', 'Kyoto old street', 'antique playing cards'), never logos, games, characters or copyrighted products. For this look, fill \"commons\" for at least half of the scenes, starting with scene 1, using the exact Wikimedia Commons name of a public-domain painting, engraving, historic photograph or map of the exact person, place or object (e.g. \"Lighthouse of Alexandria engraving\", \"Laika 1957 photograph\"); stock footage only for neutral scenes, and its search must name the exact place or object. Keep the whole spoken script under 46 words.",
             "list_share": 0,
             "casefile": {
               "stamp": "LITTLE-KNOWN",
