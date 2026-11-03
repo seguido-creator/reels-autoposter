@@ -35,8 +35,22 @@ def narrate(lines, voice, speed):
         log(f"narration line {i}: {len(audio) / 24000:.2f}s {link}")
 
 
-def gemini_samples(text, voices, style):
-    """Same text in several Gemini TTS voices (e.g. VOICE=gemini:Laomedeia,Gacrux) -> MP3s in the Drive Renders folder."""
+def heard(wav):
+    """What a small Whisper model hears in the take (Tagalog), to catch words said wrong."""
+    try:
+        from faster_whisper import WhisperModel
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(wav), "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                             capture_output=True, check=True, timeout=120).stdout
+        segs, _ = WhisperModel(os.environ.get("ALIGN_MODEL", "small"), device="cpu", compute_type="int8").transcribe(
+            np.frombuffer(raw, dtype=np.float32), language="tl", beam_size=5)
+        return " ".join(s.text.strip() for s in segs)
+    except Exception as exc:
+        return f"(no transcript: {str(exc)[:80]})"
+
+
+def gemini_samples(takes, voices, style):
+    """Each take (takes are separated by || in LINES) in each Gemini TTS voice (VOICE=gemini:Laomedeia,Gacrux)
+    -> one MP3 per take in the Drive Renders folder, with what Whisper heard in the log."""
     import transform
     drive = drive_service(google_creds())
     folder = render_folder_id(drive)
@@ -44,19 +58,24 @@ def gemini_samples(text, voices, style):
     out = Path("voice_samples")
     out.mkdir(exist_ok=True)
     for v in voices:
-        wav = out / f"{v}.wav"
-        secs = transform.speak(text, {"voice": v, "voice_style": style or "natural and expressive"}, wav)
-        mp3 = wav.with_suffix(".mp3")
-        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(wav), "-b:a", "128k", str(mp3)], check=True)
-        _, link = upload_render(drive, mp3, f"voice_test_gemini_{v}_{stamp}.mp3", folder, mime="audio/mpeg")
-        log(f"voice test {v}: {secs:.1f}s {link}")
+        for n, text in enumerate(takes, 1):
+            tag = f"{v}_take{n}" if len(takes) > 1 else v
+            wav = out / f"{tag}.wav"
+            secs = transform.speak(text, {"voice": v, "voice_style": style or "natural and expressive"}, wav)
+            mp3 = wav.with_suffix(".mp3")
+            subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(wav), "-b:a", "128k", str(mp3)], check=True)
+            _, link = upload_render(drive, mp3, f"voice_test_gemini_{tag}_{stamp}.mp3", folder, mime="audio/mpeg")
+            log(f"voice test {tag}: {secs:.1f}s {link}")
+            log(f"  text:  {text}")
+            log(f"  heard: {heard(wav)}")
 
 
 def main():
     lines = [x.strip() for x in os.environ.get("LINES", "").split("|") if x.strip()]
     voice = os.environ.get("VOICE") or ""
     if voice.startswith("gemini:"):
-        return gemini_samples(" ".join(lines) or TEXT, [v.strip() for v in voice[7:].split(",") if v.strip()],
+        takes = [" ".join(x.strip() for x in t.split("|") if x.strip()) for t in os.environ.get("LINES", "").split("||")]
+        return gemini_samples([t for t in takes if t] or [TEXT], [v.strip() for v in voice[7:].split(",") if v.strip()],
                               os.environ.get("STYLE", ""))
     if lines:
         return narrate(lines, os.environ.get("VOICE") or "am_michael", float(os.environ.get("SPEED") or 1.0))

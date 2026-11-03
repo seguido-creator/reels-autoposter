@@ -343,6 +343,16 @@ def _kokoro(text, voice, out_wav, speed=1.0):
     return wav_seconds(out_wav)
 
 
+def tts_text(text, page):
+    """The text the voice model reads (captions keep the real spelling): Tagalog words the model says wrong are
+    respelled the way they sound, from config "pronounce" (all pages) plus the page's own "pronounce" list."""
+    rules = dict(load_config().get("pronounce") or {})
+    rules.update(page.get("pronounce") or {})
+    for word, say in rules.items():
+        text = re.sub(rf"(?i)\b{re.escape(word)}\b", say, text)
+    return text
+
+
 def speak(text, page, out_wav):
     """Voice -> 24 kHz mono WAV file. Pages with "kokoro_voice" use the free Kokoro model first; Gemini TTS is the
     default and the backup."""
@@ -354,6 +364,7 @@ def speak(text, page, out_wav):
                 return secs
         except Exception as exc:  # missing package or model download problem: fall back to Gemini
             log(f"free voice failed ({str(exc)[:120]}), using Gemini TTS")
+    text = tts_text(text, page)
     client = _gemini_client()
     model = os.environ.get("TTS_MODEL", "").strip() or load_config()["tts_model_default"]
     last = None
