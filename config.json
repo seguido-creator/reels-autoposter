@@ -28,9 +28,7 @@
       "page_id_env": "FB_PAGE_ID_US",
       "token_env": "FB_TOKEN_US",
       "timezone": "America/New_York",
-      "slots": [
-        "19:00"
-      ],
+      "slots": [],
       "brand": "Throttle Decoded",
       "follow_cta": "Follow for one car fact a day",
       "follow_line": "Follow Throttle Decoded for one car fact most drivers don't know, every day.",
@@ -43,9 +41,7 @@
       ],
       "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type.",
       "image": {
-        "slots": [
-          "17:00"
-        ],
+        "slots": ["12:00", "17:00"],
         "footer": "Cars, explained. Follow for daily car facts.",
         "types": [
           "fact",
@@ -92,9 +88,7 @@
       "page_id_env": "FB_PAGE_ID_UAE",
       "token_env": "FB_TOKEN_UAE",
       "timezone": "Asia/Dubai",
-      "slots": [
-        "19:30"
-      ],
+      "slots": [],
       "brand": "Stay Decoded",
       "follow_cta": "Follow for daily travel secrets",
       "follow_line": "Follow Stay Decoded for hotel and travel secrets, every day.",
@@ -110,9 +104,7 @@
       ],
       "content_angle": "LUXURY STAYS & TRAVEL. Explain the design, architecture, hospitality tricks, travel hacks or the 'how does this work' behind what we see (infinity pools, overwater villas, yacht stabilisers, booking tips). Never invent a hotel name, location, or price; mention a place only if it is unmistakable (e.g. Burj Al Arab), otherwise say 'this resort'.",
       "image": {
-        "slots": [
-          "20:30"
-        ],
+        "slots": [],
         "footer": "Luxury stays & travel smarts, decoded.",
         "types": [
           "fact",
@@ -177,10 +169,7 @@
       ],
       "content_angle": "DOGS AND CATS. Explain the animal behavior we see (why dogs tilt their heads, why cats knock things over), plus a practical, safe pet-care tip for Filipino pet owners. Use only well-established veterinary/behavior facts; never give medical dosing advice; if a pet looks hurt or stressed, say to see a vet.",
       "image": {
-        "slots": [
-          "08:00",
-          "20:30"
-        ],
+        "slots": ["20:30"],
         "footer": "Bakit ganyan ang alaga mo? Alamin natin!",
         "types": [
           "fact",
@@ -284,12 +273,7 @@
       "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
       "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
       "image": {
-        "slots": [
-          "09:00",
-          "11:30",
-          "16:30",
-          "21:00"
-        ],
+        "slots": ["09:00", "16:30", "21:00"],
         "footer": "Practical help & encouragement for caregivers.",
         "angle": "DEMENTIA CAREGIVING: practical, widely recommended caregiving strategies (communication, routines, home safety, sundowning, mealtimes, caregiver self-care), gentle encouragement for caregivers, and common myths vs facts. Follow mainstream guidance from organisations like the Alzheimer's Association, Alzheimer's Society and NHS. Never suggest medications, supplements, cures or diagnoses; for symptoms or changes, say to talk to their doctor.",
         "types": [
@@ -341,9 +325,7 @@
       "audience": "Filipinos at home and OFWs abroad (UAE, Saudi, Qatar, Singapore, Hong Kong...) who want to save, budget, avoid scams and start investing.",
       "language": "Natural Taglish (mix of Tagalog and English) the way Filipinos actually talk and post on Facebook, like a friendly kabayan. Light, warm, relatable; keep money terms and numbers clear.",
       "image": {
-        "slots": [
-          "18:00"
-        ],
+        "slots": [],
         "footer": "Money smarts for Filipinos & OFWs.",
         "angle": "PERSONAL FINANCE FOR FILIPINOS & OFWs: budgeting, emergency funds, saving habits, avoiding debt traps and scams, how common investments work in general (e.g. what an index fund, Pag-IBIG MP2 or a time deposit is). General education only: never recommend a specific stock, coin, company or product, never promise returns, never quote current rates or prices.",
         "types": [
@@ -391,18 +373,16 @@
       "key": "HOME",
       "page_id_env": "FB_PAGE_ID_HOME",
       "token_env": "FB_TOKEN_HOME",
-      "timezone": "Asia/Dubai",
+      "timezone": "America/New_York",
       "brand": "Home Hacks Decoded",
       "follow_cta": "Follow for one home hack a day",
       "follow_line": "Follow Home Hacks Decoded for one easy home hack every day.",
-      "audience": "Renters and homeowners in the UAE and worldwide (lots of expats in apartments) who like simple cleaning, organising, small-space and moving hacks.",
-      "language": "Simple, clear international English.",
+      "audience": "Renters and homeowners in the US (plus Canada, the UK and Australia), often in apartments or starter homes, who like simple, safe cleaning, organising, small-space and moving hacks.",
+      "language": "Simple, clear American English.",
       "image": {
-        "slots": [
-          "18:30"
-        ],
+        "slots": ["12:00", "19:00"],
         "footer": "Cleaning, organising & moving hacks.",
-        "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home cool and fresh in hot climates. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
+        "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home fresh and comfortable through the seasons. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
         "types": [
           "tips",
           "myth",
@@ -455,8 +435,7 @@
       "image": {
         "slots": [
           "12:00",
-          "19:00",
-          "22:00"
+          "19:00"
         ],
         "footer": "What the world looked like, side by side.",
         "angle": "WORLD HISTORY IN PARALLEL: 'meanwhile' timelines (what was happening in different parts of the world at the same moment), surprising 'older than you think' comparisons (e.g. Oxford University is older than the Aztec Empire), 'same year' facts, how famous empires, inventions and landmarks overlap in time, and 'the year you were born' nostalgia for a US audience (1950s to 2000s). Every fact must carry its year or century and be well documented in standard encyclopedias.",
@@ -465,7 +444,7 @@
           "myth",
           "question"
         ],
-        "extra_rules": "This page covers world history, including religious history such as the Bible era. Treat religious figures and events respectfully and factually as history: attribute them to sources ('according to the Gospels', 'historians date this to...'), never preach, argue, rank or mock any belief. No modern party politics, no glorifying war, no graphic violence. Ancient dates are often estimates: say 'around' or 'about' and never give false precision. Only use facts you are highly confident appear in standard encyclopedias; if unsure of a date or detail, leave it out. Never invent quotes. The 'open on a real-life problem' rule does not apply here: open with the most surprising true time comparison instead. A professional-advice caveat is not needed. If you announce a number of items ('these 3 events'), give exactly that many. You may name landmarks, artworks and companies as history (e.g. the Eiffel Tower, The Starry Night, Nintendo), but stock-footage search phrases must describe what can be filmed today (e.g. 'Eiffel Tower Paris', 'Kyoto old street', 'antique playing cards'), never logos, games, characters or copyrighted products.",
+        "extra_rules": "This page covers world history, including religious history such as the Bible era. Treat religious figures and events respectfully and factually as history: attribute them to sources ('according to the Gospels', 'historians date this to...'), never preach, argue, rank or mock any belief. No modern party politics, no glorifying war, no graphic violence. Ancient dates are often estimates: say 'around' or 'about' and never give false precision. Only use facts you are highly confident appear in standard encyclopedias; if unsure of a date or detail, leave it out. Never invent quotes. The 'open on a real-life problem' rule does not apply here: open with the most surprising true time comparison instead. A professional-advice caveat is not needed. If you announce a number of items ('these 3 events'), give exactly that many. You may name landmarks, artworks and companies as history (e.g. the Eiffel Tower, The Starry Night, Nintendo), but stock-footage search phrases must describe what can be filmed today (e.g. 'Eiffel Tower Paris', 'Kyoto old street', 'antique playing cards'), never logos, games, characters or copyrighted products. For this look, fill \"commons\" for at least half of the scenes, starting with scene 1, using the exact Wikimedia Commons name of a public-domain painting, engraving, historic photograph or map of the exact person, place or object (e.g. \"Lighthouse of Alexandria engraving\", \"Laika 1957 photograph\"); stock footage only for neutral scenes, and its search must name the exact place or object. Keep the whole spoken script under 46 words.",
         "style_block": "Tell it like a great history teacher with a twist:\n- Open with a jaw-dropping but TRUE time comparison or 'meanwhile' fact the viewer did not expect.\n- Anchor every event with its year or century so viewers can place it on a mental timeline.\n- Connect the events: say what links them or why the overlap is surprising.\n- Close with a one-line takeaway that makes history feel close, then a genuine question.\n- Sound curious and warm, never like a textbook, no hype.",
         "theme": {
           "bg_top": "#2A2118",
@@ -476,7 +455,7 @@
           "on_accent": "#1A140E",
           "motif": "circles",
           "title_font": "Playfair-Bold.ttf",
-          "body_font": "Poppins-Medium.ttf",
+          "body_font": "Inter-SemiBold.ttf",
           "tag_font": "Poppins-Bold.ttf",
           "line_height": 1.15
         },
@@ -490,7 +469,7 @@
           6
         ],
         "reel_all_slots": true,
-        "narrator": "You are the friend who just discovered something wild about history and can't believe it. Signature opener style: 'Okay, this one broke my brain...' or 'Wait. These happened at the SAME time?'. Show genuine amazement, use short punchy sentences, talk to 'you', build up then reveal. Never exaggerate the facts; the excitement is in the delivery. Tell it as one flowing story, never as a numbered list ('number one, number two'); several points are woven in naturally ('and then...', 'but here is the twist...').",
+        "narrator": "You are THE SECRET-TELLER: a calm, low, slightly conspiratorial storyteller who leans in to tell the viewer something most people never learned. Quiet confidence, short sentences, a pause before the reveal. Tell ONE story with a twist revealed near the end (never a list, never 'number one'); points are woven in ('and then...', 'but here is the part almost nobody connects...'). Hook on the first spoken word, an open loop in the first line, a re-hook halfway, and a last line that loops back to the first. HONESTY RULE: the 'secret' is a real, well-documented but little-known fact found in standard references. Never say 'they don't want you to know', never imply a cover-up or conspiracy, never invent or exaggerate; legends and disputed accounts are clearly labelled as legend or disputed ('according to legend', 'historians still debate').",
         "list_share": 0,
         "reel_mode": "explainer",
         "reel_fallback_query": "ancient ruins",
@@ -505,42 +484,29 @@
         "timeline": true,
         "reel_intro": "magazine",
         "rec_zoom": true,
-        "preview_overrides": {
-          "voice": "Fenrir",
-          "voice_style": "a calm, low, slightly conspiratorial storyteller leaning in to tell you something most people never learned: unhurried, warm, quiet intensity, short pauses before reveals, never shouting, clear American English",
-          "image": {
-            "look": "casefile",
-            "narrator": "You are THE SECRET-TELLER: a calm, low, slightly conspiratorial storyteller who leans in to tell the viewer something most people never learned. Quiet confidence, short sentences, a pause before the reveal. Tell ONE story with a twist revealed near the end (never a list, never 'number one'); points are woven in ('and then...', 'but here is the part almost nobody connects...'). Hook on the first spoken word, an open loop in the first line, a re-hook halfway, and a last line that loops back to the first. HONESTY RULE: the 'secret' is a real, well-documented but little-known fact found in standard references. Never say 'they don't want you to know', never imply a cover-up or conspiracy, never invent or exaggerate; legends and disputed accounts are clearly labelled as legend or disputed ('according to legend', 'historians still debate').",
-            "openers": [
-              "Most people never learned this in school...",
-              "Here's something your history teacher skipped...",
-              "Almost nobody connects these two dates...",
-              "Lean in, because this one's strange..."
-            ],
-            "max_words": 46,
-            "place_guard": true,
-            "extra_rules": "This page covers world history, including religious history such as the Bible era. Treat religious figures and events respectfully and factually as history: attribute them to sources ('according to the Gospels', 'historians date this to...'), never preach, argue, rank or mock any belief. No modern party politics, no glorifying war, no graphic violence. Ancient dates are often estimates: say 'around' or 'about' and never give false precision. Only use facts you are highly confident appear in standard encyclopedias; if unsure of a date or detail, leave it out. Never invent quotes. The 'open on a real-life problem' rule does not apply here: open with the most surprising true time comparison instead. A professional-advice caveat is not needed. If you announce a number of items ('these 3 events'), give exactly that many. You may name landmarks, artworks and companies as history (e.g. the Eiffel Tower, The Starry Night, Nintendo), but stock-footage search phrases must describe what can be filmed today (e.g. 'Eiffel Tower Paris', 'Kyoto old street', 'antique playing cards'), never logos, games, characters or copyrighted products. For this look, fill \"commons\" for at least half of the scenes, starting with scene 1, using the exact Wikimedia Commons name of a public-domain painting, engraving, historic photograph or map of the exact person, place or object (e.g. \"Lighthouse of Alexandria engraving\", \"Laika 1957 photograph\"); stock footage only for neutral scenes, and its search must name the exact place or object. Keep the whole spoken script under 46 words.",
-            "list_share": 0,
-            "casefile": {
-              "stamp": "LITTLE-KNOWN",
-              "file_word": "FILE",
-              "caption_font": "Inter-SemiBold.ttf",
-              "paper": "#EADBC0",
-              "paper_dark": "#D3BC92",
-              "ink": "#2A1F14",
-              "stamp_color": "#B3261E",
-              "accent": "#E8B04B",
-              "shade": "#6B4A22"
-            },
-            "theme": {
-              "title_font": "Playfair-Bold.ttf",
-              "body_font": "Inter-SemiBold.ttf"
-            }
-          }
+        "look": "casefile",
+        "openers": [
+          "Most people never learned this in school...",
+          "Here's something your history teacher skipped...",
+          "Almost nobody connects these two dates...",
+          "Lean in, because this one's strange..."
+        ],
+        "max_words": 46,
+        "place_guard": true,
+        "casefile": {
+          "stamp": "LITTLE-KNOWN",
+          "file_word": "FILE",
+          "caption_font": "Inter-SemiBold.ttf",
+          "paper": "#EADBC0",
+          "paper_dark": "#D3BC92",
+          "ink": "#2A1F14",
+          "stamp_color": "#B3261E",
+          "accent": "#E8B04B",
+          "shade": "#6B4A22"
         }
       },
       "voice": "Fenrir",
-      "voice_style": "an excited friend who just discovered a mind-blowing history fact and can't wait to tell you: energetic, amazed, fast when building up, a beat of silence before the reveal, then a delighted punchline; clear American English"
+      "voice_style": "a calm, low, slightly conspiratorial storyteller leaning in to tell you something most people never learned: unhurried, warm, quiet intensity, short pauses before reveals, never shouting, clear American English"
     },
     {
       "key": "KAS",
@@ -555,10 +521,7 @@
       "voice": "Laomedeia",
       "voice_style": "Tita Chari, a lively Filipina woman in her 50s telling juicy chika to her amigas: animated, playful, expressive, quick when the story heats up, a dramatic pause and a softer voice right before the twist, natural Taglish, clear on names and years; native Filipino pronunciation of every Tagalog word: each 'a' is an open 'ah' as in 'bahay', never 'o' (manunulat = ma-nu-nu-LAT, not 'manunulot'; bayan = ba-YAN; kasaysayan = ka-say-SA-yan), and English words in Taglish are said the way Filipinos say them",
       "image": {
-        "slots": [
-          "12:00",
-          "20:00"
-        ],
+        "slots": [],
         "footer": "Totoong chika ng kasaysayan.",
         "angle": "PHILIPPINE HISTORY TOLD LIKE CHIKA: the human, surprising and dramatic side of well-documented Philippine history: the love lives and rivalries of heroes (Rizal's loves, Bonifacio vs Aguinaldo at Tejeros 1897, Antonio Luna's temper), who streets, towns and landmarks are named after (EDSA = Epifanio de los Santos), surprising family links between historical figures, everyday life in old Manila, firsts and 'hindi mo alam' facts. Every fact must carry its year or era and be well documented in standard references (encyclopedias, the National Historical Commission of the Philippines).",
         "types": [
@@ -628,6 +591,258 @@
           "shade": "#8A4B1E"
         }
       }
+    },
+    {
+      "key": "RET",
+      "youtube_only": true,
+      "page_id_env": "FB_PAGE_ID_RET",
+      "token_env": "FB_TOKEN_RET",
+      "timezone": "America/New_York",
+      "brand": "Retirement Decoded",
+      "follow_cta": "Subscribe for one clear money fact a day",
+      "follow_line": "Subscribe to Retirement Decoded for one clear, sourced explainer a day.",
+      "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
+      "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
+      "image": {
+        "slots": [],
+        "footer": "Retirement, explained plainly.",
+        "angle": "US RETIREMENT BASICS: how Social Security benefits and claiming ages work, 401(k)s, IRAs and Roth vs traditional accounts in general, required minimum distributions, Medicare enrollment timing, common retirement myths, and planning habits. Explain mechanics and trade-offs, never tell someone what to choose.",
+        "types": [
+          "tips",
+          "myth",
+          "fact"
+        ],
+        "extra_rules": "US audience. General education only, never personal financial, legal, tax or medical advice: explain how things work and what people commonly do, and say 'check with a licensed professional for your situation' when a choice depends on someone's own case. Never recommend a specific company, card, lender, fund, product or app; never promise results. Numbers that change every year (limits, rates, ages, fees) only when the fact-check source states them, always with the year ('for 2026'); otherwise explain the rule without the number. Base every claim on official or highly reputable US sources (SSA.gov, IRS.gov, Medicare.gov, Investor.gov, CFPB) and name the source in the caption. No clickbait: the hook must be true and the Reel must deliver what it promises. No scare tactics, no politics.",
+        "fact_check": true,
+        "list_share": 0,
+        "max_words": 60,
+        "theme": {
+          "bg_top": "#14324A",
+          "bg_bottom": "#0A1B29",
+          "accent": "#E3B35A",
+          "text": "#FFFFFF",
+          "muted": "#D0D7E2",
+          "on_accent": "#14324A",
+          "motif": "stripes",
+          "title_font": "Oswald-Medium.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.12
+        },
+        "monogram": "RD",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_outro": "Subscribe to Retirement Decoded for more plain-English explainers.",
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "retired couple walking",
+        "signals_hashtags": [
+          "retirement",
+          "socialsecurity",
+          "retirementplanning"
+        ],
+        "reel_subject": "",
+        "planned_slot": "10:00"
+      },
+      "voice": "Charon",
+      "voice_style": "calm, trustworthy and warm, like a patient guide explaining retirement plainly; clear American English"
+    },
+    {
+      "key": "CRED",
+      "youtube_only": true,
+      "page_id_env": "FB_PAGE_ID_CRED",
+      "token_env": "FB_TOKEN_CRED",
+      "timezone": "America/New_York",
+      "brand": "Credit Decoded",
+      "follow_cta": "Subscribe for one clear money fact a day",
+      "follow_line": "Subscribe to Credit Decoded for one clear, sourced explainer a day.",
+      "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
+      "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
+      "image": {
+        "slots": [],
+        "footer": "Credit scores, explained plainly.",
+        "angle": "US CREDIT BASICS: how credit scores are built (payment history, utilization, length of history, new credit, mix), how credit reports work and how to get free reports and dispute errors, hard vs soft inquiries, how credit card interest and minimum payments work, debt payoff methods in general, and common credit myths.",
+        "types": [
+          "tips",
+          "myth",
+          "fact"
+        ],
+        "extra_rules": "US audience. General education only, never personal financial, legal, tax or medical advice: explain how things work and what people commonly do, and say 'check with a licensed professional for your situation' when a choice depends on someone's own case. Never recommend a specific company, card, lender, fund, product or app; never promise results. Numbers that change every year (limits, rates, ages, fees) only when the fact-check source states them, always with the year ('for 2026'); otherwise explain the rule without the number. Base every claim on official or highly reputable US sources (CFPB, FTC, AnnualCreditReport.com, myFICO education pages, Federal Reserve) and name the source in the caption. No clickbait: the hook must be true and the Reel must deliver what it promises. No scare tactics, no politics.",
+        "fact_check": true,
+        "list_share": 0,
+        "max_words": 60,
+        "theme": {
+          "bg_top": "#1D2B4F",
+          "bg_bottom": "#0E1529",
+          "accent": "#4FC3A1",
+          "text": "#FFFFFF",
+          "muted": "#D0D7E2",
+          "on_accent": "#0E1529",
+          "motif": "stripes",
+          "title_font": "Oswald-Medium.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.12
+        },
+        "monogram": "CD",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_outro": "Subscribe to Credit Decoded for more plain-English explainers.",
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "credit card payment",
+        "signals_hashtags": [
+          "creditscore",
+          "credittips",
+          "personalfinance"
+        ],
+        "reel_subject": "",
+        "planned_slot": "13:00"
+      },
+      "voice": "Kore",
+      "voice_style": "clear, confident and friendly, like a smart friend who finally explains credit simply; clear American English"
+    },
+    {
+      "key": "MED",
+      "youtube_only": true,
+      "page_id_env": "FB_PAGE_ID_MED",
+      "token_env": "FB_TOKEN_MED",
+      "timezone": "America/New_York",
+      "brand": "Medical Bills Decoded",
+      "follow_cta": "Subscribe for one clear money fact a day",
+      "follow_line": "Subscribe to Medical Bills Decoded for one clear, sourced explainer a day.",
+      "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
+      "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
+      "image": {
+        "slots": [],
+        "footer": "Medical bills, explained plainly.",
+        "angle": "US MEDICAL BILLS BASICS: how to read an itemized bill and an Explanation of Benefits, deductibles, copays, coinsurance and out-of-pocket maximums, in-network vs out-of-network, the No Surprises Act protections, asking for itemized bills and financial assistance (charity care) at nonprofit hospitals, payment plans, and how medical debt and credit reports interact. Billing and insurance process only, never medical advice.",
+        "types": [
+          "tips",
+          "myth",
+          "fact"
+        ],
+        "extra_rules": "US audience. General education only, never personal financial, legal, tax or medical advice: explain how things work and what people commonly do, and say 'check with a licensed professional for your situation' when a choice depends on someone's own case. Never recommend a specific company, card, lender, fund, product or app; never promise results. Numbers that change every year (limits, rates, ages, fees) only when the fact-check source states them, always with the year ('for 2026'); otherwise explain the rule without the number. Base every claim on official or highly reputable US sources (CMS.gov, HealthCare.gov, CFPB, state insurance departments, KFF) and name the source in the caption. No clickbait: the hook must be true and the Reel must deliver what it promises. No scare tactics, no politics.",
+        "fact_check": true,
+        "list_share": 0,
+        "max_words": 60,
+        "theme": {
+          "bg_top": "#123E3A",
+          "bg_bottom": "#08201E",
+          "accent": "#F2A65A",
+          "text": "#FFFFFF",
+          "muted": "#D0D7E2",
+          "on_accent": "#123E3A",
+          "motif": "stripes",
+          "title_font": "Oswald-Medium.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.12
+        },
+        "monogram": "MB",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_outro": "Subscribe to Medical Bills Decoded for more plain-English explainers.",
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "hospital billing paperwork",
+        "signals_hashtags": [
+          "medicalbills",
+          "healthinsurance",
+          "nosurprisesact"
+        ],
+        "reel_subject": "",
+        "planned_slot": "15:00"
+      },
+      "voice": "Sulafat",
+      "voice_style": "warm, steady and reassuring, explains confusing bills calmly; clear American English"
+    },
+    {
+      "key": "SMB",
+      "youtube_only": true,
+      "page_id_env": "FB_PAGE_ID_SMB",
+      "token_env": "FB_TOKEN_SMB",
+      "timezone": "America/New_York",
+      "brand": "Small Business Decoded",
+      "follow_cta": "Subscribe for one clear money fact a day",
+      "follow_line": "Subscribe to Small Business Decoded for one clear, sourced explainer a day.",
+      "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
+      "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
+      "image": {
+        "slots": [],
+        "footer": "Small business, explained plainly.",
+        "angle": "US SMALL BUSINESS BASICS: business structures in general (sole proprietor, LLC, S corp), EINs, separating business and personal money, bookkeeping habits, estimated taxes and common deductions in general, pricing and cash flow, SBA resources and free mentoring (SCORE, SBDCs), avoiding common scams that target small businesses.",
+        "types": [
+          "tips",
+          "myth",
+          "fact"
+        ],
+        "extra_rules": "US audience. General education only, never personal financial, legal, tax or medical advice: explain how things work and what people commonly do, and say 'check with a licensed professional for your situation' when a choice depends on someone's own case. Never recommend a specific company, card, lender, fund, product or app; never promise results. Numbers that change every year (limits, rates, ages, fees) only when the fact-check source states them, always with the year ('for 2026'); otherwise explain the rule without the number. Base every claim on official or highly reputable US sources (SBA.gov, IRS.gov, FTC, SCORE, U.S. Chamber of Commerce) and name the source in the caption. No clickbait: the hook must be true and the Reel must deliver what it promises. No scare tactics, no politics.",
+        "fact_check": true,
+        "list_share": 0,
+        "max_words": 60,
+        "theme": {
+          "bg_top": "#2B2340",
+          "bg_bottom": "#151020",
+          "accent": "#F28C38",
+          "text": "#FFFFFF",
+          "muted": "#D0D7E2",
+          "on_accent": "#151020",
+          "motif": "stripes",
+          "title_font": "Oswald-Medium.ttf",
+          "body_font": "Poppins-Regular.ttf",
+          "tag_font": "Poppins-Bold.ttf",
+          "upper_headline": true,
+          "line_height": 1.12
+        },
+        "monogram": "SB",
+        "reel_days": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "reel_outro": "Subscribe to Small Business Decoded for more plain-English explainers.",
+        "reel_all_slots": true,
+        "reel_mode": "explainer",
+        "reel_fallback_query": "small business owner shop",
+        "signals_hashtags": [
+          "smallbusiness",
+          "entrepreneur",
+          "smallbusinesstips"
+        ],
+        "reel_subject": "",
+        "planned_slot": "18:00"
+      },
+      "voice": "Achird",
+      "voice_style": "upbeat, practical and encouraging, like a mentor for new business owners; clear American English"
     }
   ],
   "cross_share": {
