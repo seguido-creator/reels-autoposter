@@ -11,14 +11,15 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 ## Pages (config.json)
 | Key | Page | Language / audience | Notes |
 |---|---|---|---|
-| US | Throttle Decoded | US English, cars | narrator: garage buddy (Algenib) |
-| UAE | Stay Decoded | English, hotels/travel | |
-| PH | Alaga Explained | Taglish, pets (PH) | best organic grower, PH audience |
+| US | Throttle Decoded | US English, cars | 2 AI Reels/day, no bundle clips (originals only); narrator: garage buddy (Algenib) |
+| UAE | Stay Decoded | English, hotels/travel | minimal: daily text post only (no Reels) |
+| PH | Alaga Explained | Taglish, pets (PH) | light: 5 clip Reels + 1 AI Reel/day; best organic grower |
 | PAWS | Pawside Giggles | English, pets | |
-| DEM | Navigating Dementia Together | English, caregivers | ~60% US viewers; narrator stays gentle |
-| FIN | Pera Decoded | Taglish, money (PH/OFW) | |
-| HOME | Home Hacks Decoded | English, home tips | |
-| HIST | History Decoded | US English, world history | narrator: amazed friend (Fenrir) |
+| DEM | Navigating Dementia Together | English, caregivers | 3 AI Reels/day; ~60% US viewers; narrator stays gentle |
+| FIN | Pera Decoded | Taglish, money (PH/OFW) | paused: daily text post only |
+| HOME | Home Hacks Decoded | US English, home tips | 2 AI Reels/day, US time zone |
+| HIST | History Decoded | US English, world history | 2 AI Reels/day, case-file look, secret-teller narrator (Fenrir) |
+| RET / CRED / MED / SMB | Retirement / Credit / Medical Bills / Small Business Decoded | US English, money basics | YouTube-only (youtube_only: true): Reel + sidecar saved to Published, no Facebook; fact-checked, sourced, general education only |
 | KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
@@ -52,4 +53,5 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-02: Captions synced to real speech with faster-whisper.
 - 2026-11-03: Pronunciation guard (transform.speak): respelling + Whisper check, fails closed.
 - 2026-11-04: NEW DIRECTION (owner): US content and US audience first; stop spending on low-ROI niches. Pera Decoded paused or minimal; KAS parked (not launched); Alaga Explained light posting only, no extra Gemini spend. Budget goes to History Decoded (2/day, secret-teller style), Navigating Dementia Together (US caregivers; Reels also to its YouTube via shorts-crossposter once the owner adds the token), Home Hacks Decoded and Throttle Decoded (originals only). New US money series for the YouTube channels Retirement Decoded, Credit Decoded, Medical Bills Decoded, Small Business Decoded: original, fact-checked, sourced, no financial-advice framing, no clickbait, own sidecar brand per channel in the Published folder. Per-page numbers and cost change need the owner's approval in chat before anything is switched on.
+- 2026-11-04: Approved numbers (owner): AI Reels/day US 2, HIST 2, DEM 3, HOME 2, PH 1 (+5 clip Reels), UAE 0, FIN 0, KAS 0; text posts stay. Spend cap stays US$50/month (option B). HIST case-file + secret-teller style is now the live default. Money series YouTube-only, 1/day each after preview approval (slots stay empty until then).
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.

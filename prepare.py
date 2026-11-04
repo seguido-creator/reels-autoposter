@@ -129,6 +129,9 @@ def main():
     for page in cfg["pages"]:
         if only and page["key"].upper() != only:
             continue
+        if not page.get("slots"):  # no clip-Reel slots (e.g. US originals only): nothing to prepare
+            log(f"[{page['key']}] no clip slots, skipping")
+            continue
         page["_trends"] = trends.get(page["key"].upper(), [])
         try:
             prepare_page(page, cfg, drive, sheet, folder_id)

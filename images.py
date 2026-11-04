@@ -684,10 +684,11 @@ def make_reel(page, card, png_path, out_mp4, rows):
 PUBLISHED_FOLDER = "Reels Autoposter - Published"
 
 
-def save_published(page, mp4, card, caption, video_id, rnote):
+def save_published(page, mp4, card, caption, video_id, rnote, strict=False):
     """Keeps a copy of every original Reel we published (mp4 + .json sidecar) in the Drive folder
     "Reels Autoposter - Published" so other platforms (YouTube, Instagram, ...) can reuse it.
-    Bought 'pack' Reels never come through here. Never raises."""
+    Bought 'pack' Reels never come through here. Never raises, unless strict (YouTube-only pages, where this
+    copy IS the post)."""
     try:
         from common import drive_service, google_creds, upload_render
         drive = drive_service(google_creds())
@@ -707,7 +708,9 @@ def save_published(page, mp4, card, caption, video_id, rnote):
             "part": (card.get("_part") or {}).get("n", 0),
             "caption": caption, "hashtags": card.get("hashtags", []),
             "sources": card.get("_sources", []), "fact_checked": bool(card.get("_fc")),
-            "posted_at_utc": utcnow().isoformat(timespec="seconds"), "fb_video_id": video_id,
+            "posted_at_utc": utcnow().isoformat(timespec="seconds"),
+            "fb_video_id": "" if page.get("youtube_only") else video_id,
+            "youtube_only": bool(page.get("youtube_only")),
         }
         side = Path(f"/tmp/{stem}.json")
         side.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -717,6 +720,8 @@ def save_published(page, mp4, card, caption, video_id, rnote):
         return "; saved"
     except Exception as exc:
         log(f"[{page['key']}] could not save published copy: {str(exc)[:150]}")
+        if strict:
+            raise
         return "; save FAILED"
 
 
@@ -740,7 +745,8 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
         page = with_preview_overrides(page)
     page_id = os.environ.get(page["page_id_env"], "").strip()
     token = os.environ.get(page["token_env"], "").strip()
-    if not preview and (not page_id or not token):
+    yt_only = bool(page.get("youtube_only"))  # no Facebook page: the Reel only goes to the Published folder
+    if not preview and not yt_only and (not page_id or not token):
         log(f"[{page['key']}] no Page ID/token secret yet, skipping images")
         return
     mine = [r for r in rows if r.get("page") == page["key"]]
@@ -831,7 +837,17 @@ def process(page, cfg, ws, rows, now, force=False, preview=False):
     message = part_caption(cfg, page, card, message)
     try:
         post_id, note = "", ""
-        if not photo_posts_on(cfg, page):
+        if yt_only:
+            # YouTube-only brand: make the Reel and save it with its sidecar; shorts-crossposter uploads it
+            mp4 = Path(f"/tmp/reel_{page['key']}.mp4")
+            rmsg, rnote = make_reel(page, card, out, mp4, rows)
+            if rmsg and card.get("_series") and not rmsg.startswith(card["_series"]):
+                rmsg = f"{card['_series']}: {rmsg}"
+            post_id = f"yt{utcnow():%Y%m%d%H%M}"
+            note = f"text {card['model']}; youtube-only ({rnote})"
+            note += save_published(page, mp4, card, rmsg or message, post_id, rnote, strict=True)
+            log(f"[{page['key']}] {label}: YouTube-only Reel saved '{card['headline']}'")
+        elif not photo_posts_on(cfg, page):
             # Reels-only mode: the slot's post is the explainer Reel; the photo card is only a fallback
             try:
                 from autopost import publish_reel
@@ -898,6 +914,7 @@ def main():
         log(f"Precheck: an image slot is {'OPEN' if due else 'closed'}")
         return
     only = (args.force or args.preview).strip().upper()
+    only_keys = {k.strip() for k in only.split(",") if k.strip()}
     if not only and not any_image_due(cfg, now):
         log("No image slot open")
         return
@@ -918,7 +935,7 @@ def main():
         log(f"signals skipped: {str(exc)[:100]}")
         sig = {}
     for page in all_pages(cfg):
-        if only and page["key"].upper() != only:
+        if only and page["key"].upper() not in only_keys:
             continue
         page["_trends"] = trends.get(page["key"].upper(), [])
         page["_signals"] = signals.hint(sig.get(page["key"].upper(), [])) if sig else ""
