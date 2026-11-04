@@ -599,7 +599,7 @@
       "token_env": "FB_TOKEN_RET",
       "timezone": "America/New_York",
       "brand": "Retirement Decoded",
-      "follow_cta": "Subscribe: retirement, made clear",
+      "follow_cta": "Subscribe for more",
       "follow_line": "Subscribe to Retirement Decoded for one clear, sourced explainer a day.",
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
@@ -649,7 +649,7 @@
           "socialsecurity",
           "retirementplanning"
         ],
-        "reel_subject": "",
+        "reel_subject": "senior retirement",
         "planned_slot": "10:00"
       },
       "voice": "Charon",
@@ -662,7 +662,7 @@
       "token_env": "FB_TOKEN_CRED",
       "timezone": "America/New_York",
       "brand": "Credit Decoded",
-      "follow_cta": "Subscribe: credit, made clear",
+      "follow_cta": "Subscribe for more",
       "follow_line": "Subscribe to Credit Decoded for one clear, sourced explainer a day.",
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
@@ -712,7 +712,7 @@
           "credittips",
           "personalfinance"
         ],
-        "reel_subject": "",
+        "reel_subject": "credit card",
         "planned_slot": "13:00"
       },
       "voice": "Kore",
@@ -725,7 +725,7 @@
       "token_env": "FB_TOKEN_MED",
       "timezone": "America/New_York",
       "brand": "Medical Bills Decoded",
-      "follow_cta": "Subscribe: medical bills, made clear",
+      "follow_cta": "Subscribe for more",
       "follow_line": "Subscribe to Medical Bills Decoded for one clear, sourced explainer a day.",
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
@@ -775,7 +775,7 @@
           "healthinsurance",
           "nosurprisesact"
         ],
-        "reel_subject": "",
+        "reel_subject": "medical bills paperwork",
         "planned_slot": "15:00"
       },
       "voice": "Sulafat",
@@ -788,7 +788,7 @@
       "token_env": "FB_TOKEN_SMB",
       "timezone": "America/New_York",
       "brand": "Small Business Decoded",
-      "follow_cta": "Subscribe: business, made clear",
+      "follow_cta": "Subscribe for more",
       "follow_line": "Subscribe to Small Business Decoded for one clear, sourced explainer a day.",
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
@@ -838,7 +838,7 @@
           "entrepreneur",
           "smallbusinesstips"
         ],
-        "reel_subject": "",
+        "reel_subject": "business shop store",
         "planned_slot": "18:00"
       },
       "voice": "Achird",
