@@ -19,7 +19,7 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 | FIN | Pera Decoded | Taglish, money (PH/OFW) | |
 | HOME | Home Hacks Decoded | English, home tips | |
 | HIST | History Decoded | US English, world history | narrator: amazed friend (Fenrir) |
-| KAS | Chika ng Kasaysayan | Taglish, PH history | not live until FB_PAGE_ID_KAS / FB_TOKEN_KAS exist; narrator Tita Chari (Laomedeia, female) |
+| KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
 1. Gemini writes the script: 3 hook options -> judge picks one; word budget (image.max_words, default 70; lists +25).
@@ -35,6 +35,8 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 ## Standing rules
 - Free or practical first; paid tools/boosts only with the owner's approval and the exact cost shown.
 - No boosting for now (Nov 2026); grow with hooks, retention, more posts, follower invites.
+- US content and US audience first (2026-11-04): Gemini spend goes to US pages; PH pages stay minimal.
+- Taglish voice-overs: words in config "pronounce" are respelled for the voice only; words in "never_heard" are checked by Whisper and the Reel is not posted if said wrong (e.g. manunulat, never "manunulot").
 - Never invent facts, quotes, dates or citations; label legends ("ayon sa kuwento").
 - Historical pages: no living politicians or modern party politics.
 - Never handle passwords, tokens or keys; the owner adds secrets in GitHub himself.
@@ -48,4 +50,6 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-01: Sheets 429 errors -> gspread client retries on 429.
 - 2026-11-02: Narrator personas (image.narrator) for KAS, HIST, US. Tita Chari must be a woman: Laomedeia.
 - 2026-11-02: Captions synced to real speech with faster-whisper.
+- 2026-11-03: Pronunciation guard (transform.speak): respelling + Whisper check, fails closed.
+- 2026-11-04: NEW DIRECTION (owner): US content and US audience first; stop spending on low-ROI niches. Pera Decoded paused or minimal; KAS parked (not launched); Alaga Explained light posting only, no extra Gemini spend. Budget goes to History Decoded (2/day, secret-teller style), Navigating Dementia Together (US caregivers; Reels also to its YouTube via shorts-crossposter once the owner adds the token), Home Hacks Decoded and Throttle Decoded (originals only). New US money series for the YouTube channels Retirement Decoded, Credit Decoded, Medical Bills Decoded, Small Business Decoded: original, fact-checked, sourced, no financial-advice framing, no clickbait, own sidecar brand per channel in the Published folder. Per-page numbers and cost change need the owner's approval in chat before anything is switched on.
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.
