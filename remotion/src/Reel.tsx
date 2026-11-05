@@ -7,6 +7,7 @@ import {
   Atmosphere, CaseIntro, SentenceCaptions, EvidenceTag, MapCard, CaseTimeline, CaseOutro, CaseSound,
   CFMap, CFTheme, CaseFileProps,
 } from "./CaseFile";
+import { BoardReel, BoardCard } from "./Board";
 import {
   AbsoluteFill, Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig,
   interpolate, spring,
@@ -23,7 +24,7 @@ export type ReelProps = {
   hook: string; brand: string; monogram: string; outro: string;
   totalN: number; scenes: Scene[]; words: Word[]; theme: Theme;
   intro?: "pill" | "magazine"; rec?: boolean; timeline?: TimeItem[];
-  look?: "casefile"; maps?: (CFMap | null)[]; highlights?: string[]; music?: string | null; sfx?: boolean;
+  look?: "casefile" | "board"; cards?: BoardCard[]; maps?: (CFMap | null)[]; highlights?: string[]; music?: string | null; sfx?: boolean;
   stamp?: string; fileLabel?: string; cf?: CFTheme;
 };
 export type TimeItem = { year: string; label: string; pair?: boolean };
@@ -359,6 +360,7 @@ const CaseFileReel: React.FC<{ p: ReelProps }> = ({ p }) => {
 
 export const Reel: React.FC<ReelProps> = (p) => {
   if (p.look === "casefile" && p.cf) return <CaseFileReel p={p} />;
+  if (p.look === "board") return <BoardReel p={p} />;
   const { fps } = useVideoConfig();
   const fr = (s: number) => Math.max(0, Math.round(s * fps));
   const outroLen = 1.6;
