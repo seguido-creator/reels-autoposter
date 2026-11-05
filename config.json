@@ -604,7 +604,7 @@
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
       "image": {
-        "slots": [],
+        "slots": ["10:00"],
         "footer": "Retirement, explained plainly.",
         "angle": "US RETIREMENT BASICS: how Social Security benefits and claiming ages work, 401(k)s, IRAs and Roth vs traditional accounts in general, required minimum distributions, Medicare enrollment timing, common retirement myths, and planning habits. Explain mechanics and trade-offs, never tell someone what to choose.",
         "types": [
@@ -668,7 +668,7 @@
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
       "image": {
-        "slots": [],
+        "slots": ["13:00"],
         "footer": "Credit scores, explained plainly.",
         "angle": "US CREDIT BASICS: how credit scores are built (payment history, utilization, length of history, new credit, mix), how credit reports work and how to get free reports and dispute errors, hard vs soft inquiries, how credit card interest and minimum payments work, debt payoff methods in general, and common credit myths.",
         "types": [
@@ -732,7 +732,7 @@
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
       "image": {
-        "slots": [],
+        "slots": ["15:00"],
         "footer": "Medical bills, explained plainly.",
         "angle": "US MEDICAL BILLS BASICS: how to read an itemized bill and an Explanation of Benefits, deductibles, copays, coinsurance and out-of-pocket maximums, in-network vs out-of-network, the No Surprises Act protections, asking for itemized bills and financial assistance (charity care) at nonprofit hospitals, payment plans, and how medical debt and credit reports interact. Billing and insurance process only, never medical advice.",
         "types": [
@@ -796,7 +796,7 @@
       "audience": "Adults in the US (25-70) who want plain-English, trustworthy explanations of money systems that affect them.",
       "language": "Clear, calm, plain American English. Short sentences, no jargon without a one-line explanation.",
       "image": {
-        "slots": [],
+        "slots": ["18:00"],
         "footer": "Small business, explained plainly.",
         "angle": "US SMALL BUSINESS BASICS: business structures in general (sole proprietor, LLC, S corp), EINs, separating business and personal money, bookkeeping habits, estimated taxes and common deductions in general, pricing and cash flow, SBA resources and free mentoring (SCORE, SBDCs), avoiding common scams that target small businesses.",
         "types": [
