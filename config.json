@@ -650,7 +650,8 @@
           "retirementplanning"
         ],
         "reel_subject": "senior retirement",
-        "planned_slot": "10:00"
+        "planned_slot": "10:00",
+        "look": "board"
       },
       "voice": "Charon",
       "voice_style": "calm, trustworthy and warm, like a patient guide explaining retirement plainly; clear American English"
@@ -713,7 +714,8 @@
           "personalfinance"
         ],
         "reel_subject": "credit card",
-        "planned_slot": "13:00"
+        "planned_slot": "13:00",
+        "look": "board"
       },
       "voice": "Kore",
       "voice_style": "clear, confident and friendly, like a smart friend who finally explains credit simply; clear American English"
@@ -776,7 +778,8 @@
           "nosurprisesact"
         ],
         "reel_subject": "medical bills paperwork",
-        "planned_slot": "15:00"
+        "planned_slot": "15:00",
+        "look": "board"
       },
       "voice": "Sulafat",
       "voice_style": "warm, steady and reassuring, explains confusing bills calmly; clear American English"
@@ -839,7 +842,8 @@
           "smallbusinesstips"
         ],
         "reel_subject": "business shop store",
-        "planned_slot": "18:00"
+        "planned_slot": "18:00",
+        "look": "board"
       },
       "voice": "Achird",
       "voice_style": "upbeat, practical and encouraging, like a mentor for new business owners; clear American English"

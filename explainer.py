@@ -48,8 +48,17 @@ Return JSON with exactly these keys:
               video clip that matches this scene (e.g. "dog running grass", "car engine closeup",
               "hotel pool sunset", "coins piggy bank"). No brand names, no text, no famous people.
 {subject_rule}
-{commons_field}{map_field}{timeline_field}{highlight_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
+{commons_field}{card_field}{map_field}{timeline_field}{highlight_field}"caption": Facebook caption, 1-3 short lines adding value, ending with a genuine question. Max 2 emojis,
 "hashtags": 3-5 relevant hashtags."""
+
+CARD_FIELD = """    "card": what the screen shows during this scene (there is NO video footage; the scene is an animated
+              explainer card), an object with "title" (max 6 words, the point of the scene), "stat" (optional: ONE
+              short number, date, age, percentage or term that is in the voice-over, e.g. "65", "7 months", "30%",
+              "EOB"; "" if none - never invent a number), "icon" (one of: dollar, card, calendar, clock, doc,
+              shield, chart, check, warn, home, hospital, briefcase, piggy, percent, phone, mail, id, scale,
+              user, store, bank, search) and "points" (0-3 very short phrases, max 4 words each, taken from the
+              voice-over). For this page "search" may be "".
+"""
 
 TRUST_BLOCK = """Build trust the way good teachers do (problem first, then proof by logic):
 - Open on a REAL problem or moment this audience recognises from their own life (a specific situation,
@@ -187,6 +196,7 @@ def write_script(page, card):
                     + "; ".join(map(str, card["_issues"])))
     as_list = use_list(page, card)
     casefile = page["image"].get("look") == "casefile"
+    board = page["image"].get("look") == "board"
     opener = pick_opener(page)
     n = random.choice([3, 3, 4])  # short lists hold viewers; 5-point Reels ran 55-70s
     subject = page["image"].get("reel_subject") or page["image"].get("reel_fallback_query", "")
@@ -197,7 +207,7 @@ def write_script(page, card):
                                + page["image"]["narrator"] if page["image"].get("narrator") else "") + (
                                f"\nOpen this Reel with a first line in the spirit of: \"{opener}\" (reword it naturally; "
                                "the hook itself must still land within the first words)." if opener else ""),
-                           subject_rule=SUBJECT_RULE.format(subject=subject) if page["image"].get("reel_subject")
+                           subject_rule="" if board else SUBJECT_RULE.format(subject=subject) if page["image"].get("reel_subject")
                            else "              Pick footage that clearly shows the place, object or era named in the scene.",
                            extra_rules=("\nPage-specific rules (they override the general rules above where they "
                                         "conflict):\n" + extra) if extra else "",
@@ -210,6 +220,7 @@ def write_script(page, card):
                            num_field='"num": the point number (1..%d) for numbered scenes, 0 for intro/closing,\n    ' % n
                            if as_list else "",
                            commons_field=COMMONS_FIELD if page["image"].get("commons") else "",
+                           card_field=CARD_FIELD if board else "",
                            map_field=MAP_FIELD if casefile else "",
                            highlight_field=HIGHLIGHT_FIELD if casefile else "",
                            timeline_field=(TIMELINE_FIELD + (PAIR_NOTE if casefile else ""))
@@ -226,8 +237,8 @@ def write_script(page, card):
             data = {}
         if isinstance(data, list):
             data = data[0] if data and isinstance(data[0], dict) else {}
-        scenes = [s for s in (data.get("scenes") or []) if isinstance(s, dict)
-                  and str(s.get("vo", "")).strip() and str(s.get("search", "")).strip()]
+        scenes = [s for s in (data.get("scenes") or []) if isinstance(s, dict) and str(s.get("vo", "")).strip()
+                  and (str(s.get("search", "")).strip() if not board else _card_ok(s))]
         if (data.get("hooks") or data.get("hook")) and 3 <= len(scenes) <= 8:
             data["scenes"] = scenes
             data = pick_hook(page, data, card)
@@ -248,6 +259,22 @@ def write_script(page, card):
             return data
         log(f"[{page['key']}] explainer script incomplete, asking again")
     raise RuntimeError("explainer script missing scenes")
+
+
+def _card_ok(sc):
+    """Board look: a scene needs a usable card; the stat must be something actually said (never invented)."""
+    c = sc.get("card")
+    if not isinstance(c, dict) or not str(c.get("title") or "").strip():
+        return False
+    vo = str(sc.get("vo", "")).lower()
+    stat = str(c.get("stat") or "").strip()
+    if stat and not any(tok in vo for tok in re.findall(r"[a-z0-9%$]+", stat.lower())):
+        c["stat"] = ""
+    c["title"] = " ".join(str(c["title"]).split()[:7])
+    c["points"] = [" ".join(str(x).split()[:5]) for x in (c.get("points") or []) if str(x).strip()][:3]
+    c["icon"] = str(c.get("icon") or "doc").strip().lower()
+    sc.setdefault("search", "")
+    return True
 
 
 def clean_timeline(items):
@@ -718,6 +745,16 @@ def render(page, script, clips, out_path, clip_paths=None):
             shares = aligned
 
     segs = []
+    if page["image"].get("look") == "board":
+        # no footage: a plain brand-colour background (Remotion draws the animated cards on its own background;
+        # this file only matters for the ffmpeg fallback)
+        bg = work / "seg0.mp4"
+        th0 = page["image"]["theme"]
+        transform._run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i",
+                        f"color=c={th0.get('bg_bottom', '#111111')}:s={W}x{H}:r={FPS}:d={total:.3f}",
+                        "-an", *transform.VCODEC, str(bg)])
+        segs.append(bg)
+        clips = []
     for i, (d, clip) in enumerate(zip(shares, clips)):
         seg = work / f"seg{i}.mp4"
         if clip.get("image_url") and not clip_paths:
@@ -844,6 +881,22 @@ def casefile_props(page, script, pub, total):
     }
 
 
+def board_props(page, script, pub, total):
+    """Extra props for the "board" look: one animated card per scene, quiet music bed and whoosh at the cuts."""
+    if page["image"].get("look") != "board":
+        return {}
+    music = None
+    try:
+        import sound
+        sound.ambient_music(pub / "music.wav", total + 1, level=0.14)
+        sound.sfx(pub)
+        music = "music.wav"
+    except Exception as exc:
+        log(f"[{page['key']}] board sound skipped: {str(exc)[:100]}")
+    return {"look": "board", "cards": [sc.get("card") or {} for sc in script["scenes"]],
+            "music": music, "sfx": music is not None}
+
+
 def master_audio(path):
     """Loudness mastering (about -14 LUFS, the level Facebook/YouTube normalise to), video copied untouched."""
     import subprocess
@@ -901,6 +954,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
         "intro": page["image"].get("reel_intro") or "pill", "rec": bool(page["image"].get("rec_zoom")),
         "timeline": script.get("timeline") or [],
         **casefile_props(page, script, pub, total),
+        **board_props(page, script, pub, total),
         "theme": {"accent": th["accent"], "onAccent": th.get("on_accent", "#FFFFFF"),
                   "bgTop": th.get("bg_top", "#111111"), "bgBottom": th.get("bg_bottom", "#000000"),
                   "text": th.get("text", "#FFFFFF"), "titleFont": "title.ttf", "bodyFont": "body.ttf",
@@ -919,7 +973,7 @@ def render_remotion(page, script, shares, lead, vo_len, total, joined, wav, out_
                        timeout=int(os.environ.get("REMOTION_TIMEOUT", "2400")))
     if r.returncode != 0 or not Path(out_path).exists():
         raise RuntimeError((r.stderr or r.stdout or "no output")[-600:])
-    if page["image"].get("look") == "casefile":
+    if page["image"].get("look") in ("casefile", "board"):
         master_audio(out_path)
 
 
@@ -955,7 +1009,8 @@ def make(page, card, out_path, used_ids=()):
     follow_up(page, script, card)
     m = re.search(r"#(\d+)", str(card.get("_series") or ""))
     script["_file_no"] = int(m.group(1)) if m else int(__import__("datetime").date.today().strftime("%j"))
-    clips = find_clips(page, script["scenes"], used_ids, card.get("_still"))
+    board = page["image"].get("look") == "board"
+    clips = [] if board else find_clips(page, script["scenes"], used_ids, card.get("_still"))
     secs = render(page, script, clips, out_path)
     qa = video_qa(page, out_path, script, card)  # raises when the finished Reel must not be posted
     tags = script.get("hashtags") or []
@@ -968,6 +1023,9 @@ def make(page, card, out_path, used_ids=()):
     if tags:
         message += "\n\n" + " ".join(tags)
     ref = lambda c: str(c["id"])
+    if board:
+        log(f"[{page['key']}] board scenes: " + " | ".join(str((sc.get("card") or {}).get("title")) for sc in script["scenes"]))
+        return secs, message, ["board"] + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
         f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
     return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
@@ -1011,7 +1069,8 @@ def video_qa(page, mp4, script, card):
         prompt = QA_PROMPT.format(
             brand=page["brand"], audience=page.get("audience", ""), headline=card.get("headline", ""),
             script=" ".join(str(s.get("vo", "")) for s in script.get("scenes", []))[:2500],
-            scenes=" | ".join(str(s.get("search", "")) for s in script.get("scenes", [])))
+            scenes=" | ".join(str(s.get("search", "")) or ("animated card: " + str((s.get("card") or {}).get("title", "")))
+                              for s in script.get("scenes", [])))
         resp, _ = transform.generate(transform._gemini_client(), [
             types.Part.from_bytes(data=small.read_bytes(), mime_type="video/mp4"), prompt],
             types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
