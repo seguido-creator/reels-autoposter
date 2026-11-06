@@ -327,13 +327,35 @@ def _clean(text):
 # ---------------------------------------------------------------- voice
 _TTS_STUCK = {}  # model -> timeouts in a row during this run
 _TTS_DEAD = set()  # (api, model) routes that answered "model not found" during this run
+_TTS_V1BETA = None
+
+
+def _tts_models_hint(client):
+    """Logs the TTS models this API key can see (once), so a renamed model is easy to spot."""
+    global _TTS_HINTED
+    if _TTS_HINTED:
+        return
+    _TTS_HINTED = True
+    try:
+        names = [m.name for m in client.models.list() if "tts" in (m.name or "").lower()]
+        log("TTS models visible to this key: " + (", ".join(names) or "none"))
+    except Exception as exc:
+        log(f"TTS model list failed: {str(exc)[:120]}")
+
+
+_TTS_HINTED = False
 
 
 def _tts_classic(client, model, text, voice, style=""):
     """Gemini TTS through the classic generateContent API (24 kHz 16-bit PCM back)."""
+    from google import genai
     from google.genai import types
+    global _TTS_V1BETA
+    if _TTS_V1BETA is None:  # speechConfig only exists on the v1beta generateContent API
+        _TTS_V1BETA = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "").strip(), http_options={
+            "api_version": "v1beta", "timeout": int(os.environ.get("GEMINI_TIMEOUT_MS", "240000"))})
     prompt = f"Read the following aloud in this speaking style: {style}\n\n{text}" if style else text
-    resp = client.models.generate_content(
+    resp = _TTS_V1BETA.models.generate_content(
         model=model, contents=prompt,
         config=types.GenerateContentConfig(
             response_modalities=["AUDIO"],
@@ -473,10 +495,11 @@ def _speak_take(text, page, out_wav):
                 if use_model == model and _TTS_STUCK[model] == 2:
                     log(f"TTS: {model} keeps hanging, using {backup} first for the rest of this run")
             log(f"TTS attempt {attempt + 1} ({api}:{use_model}{'' if styled else ', plain'}) failed: {msg[:160]} | text: {text[:80]}")
-            if "not found" in msg.lower() or "404" in msg:
+            if "not found" in msg.lower() or "404" in msg or "INVALID_ARGUMENT" in msg:
                 _TTS_DEAD.add((api, use_model))  # not served on this route today: do not ask again this run
                 continue
             time.sleep(5 * min(attempt + 1, 4))
+    _tts_models_hint(client)
     raise RuntimeError(f"Voiceover failed: {last}")
 
 
