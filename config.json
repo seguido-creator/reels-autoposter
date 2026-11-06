@@ -10,6 +10,7 @@
     "gemini-nano-banana-2.1",
     "gemini-3.1-flash-lite-image"
   ],
+  "tts_extra_models": ["gemini-3.1-flash-tts-preview", "gemini-2.5-flash-preview-tts"],
   "pronounce": {"manunulat": "manunuláht"},
   "never_heard": {"manunulat": "man[ou]n[ou]lot"},
   "max_reel_seconds": 89,

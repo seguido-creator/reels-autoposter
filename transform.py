@@ -326,6 +326,20 @@ def _clean(text):
 
 # ---------------------------------------------------------------- voice
 _TTS_STUCK = {}  # model -> timeouts in a row during this run
+_TTS_DEAD = set()  # (api, model) routes that answered "model not found" during this run
+
+
+def _tts_classic(client, model, text, voice, style=""):
+    """Gemini TTS through the classic generateContent API (24 kHz 16-bit PCM back)."""
+    from google.genai import types
+    prompt = f"Read the following aloud in this speaking style: {style}\n\n{text}" if style else text
+    resp = client.models.generate_content(
+        model=model, contents=prompt,
+        config=types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice)))))
+    return resp.candidates[0].content.parts[0].inline_data.data
 
 
 _KOKORO = {}
@@ -408,22 +422,34 @@ def _speak_take(text, page, out_wav):
     model = os.environ.get("TTS_MODEL", "").strip() or load_config()["tts_model_default"]
     last = None
     backup = os.environ.get("TTS_BACKUP_MODEL", "gemini-3.8-flash-lite-tts")
-    # a stuck call is retried; then the lighter TTS model; then without the style note (rare runaway takes)
-    plan = [(model, True), (model, True), (backup, True), (model, False), (backup, False)]
+    extras = [m for m in (load_config().get("tts_extra_models") or []) if m not in (model, backup)]
+    # Interactions API first (style note as speech metadata); a stuck call is retried, then the lighter model.
+    # If Google stops serving a model on one API ("not found"), that route is skipped for the rest of the run and
+    # the classic generateContent API and the extra models in config "tts_extra_models" are tried instead.
+    plan = [("i", model, True), ("i", model, True), ("i", backup, True),
+            ("g", model, True), ("g", backup, True)] + [("g", m, True) for m in extras] + [
+            ("i", model, False), ("g", model, False)] + [("g", m, False) for m in [backup] + extras]
     if _TTS_STUCK.get(model, 0) >= 2:  # the main model keeps hanging in this run: go straight to the backup
-        plan = [(backup, True), (backup, True), (model, True), (backup, False)]
-    for attempt, (use_model, styled) in enumerate(plan):
+        plan = [("i", backup, True), ("i", backup, True)] + plan
+    for attempt, (api, use_model, styled) in enumerate(plan):
+        if (api, use_model) in _TTS_DEAD:
+            continue
         try:
-            content = {"type": "text", "text": text}
-            if styled:
-                content["annotations"] = [{"type": "speech_metadata", "style": page["voice_style"]}]
-            it = call_with_timeout(lambda: client.interactions.create(
-                model=use_model,
-                input=[{"type": "user_input", "content": [content]}],
-                response_format={"type": "audio", "mime_type": "audio/wav"},
-                generation_config={"speech_config": [{"voice": page["voice"]}]},
-            ), int(os.environ.get("TTS_TIMEOUT", "150")))
-            data = it.output_audio.data
+            if api == "i":
+                content = {"type": "text", "text": text}
+                if styled:
+                    content["annotations"] = [{"type": "speech_metadata", "style": page["voice_style"]}]
+                it = call_with_timeout(lambda: client.interactions.create(
+                    model=use_model,
+                    input=[{"type": "user_input", "content": [content]}],
+                    response_format={"type": "audio", "mime_type": "audio/wav"},
+                    generation_config={"speech_config": [{"voice": page["voice"]}]},
+                ), int(os.environ.get("TTS_TIMEOUT", "150")))
+                data = it.output_audio.data
+            else:
+                data = call_with_timeout(lambda: _tts_classic(client, use_model, text, page["voice"],
+                                                              page.get("voice_style") if styled else ""),
+                                         int(os.environ.get("TTS_TIMEOUT", "150")))
             raw = base64.b64decode(data) if isinstance(data, str) else bytes(data)
             if raw[:4] != b"RIFF":  # raw PCM -> wrap as WAV
                 with wave.open(str(out_wav), "wb") as w:
@@ -435,15 +461,22 @@ def _speak_take(text, page, out_wav):
                 raise RuntimeError("TTS returned empty audio")
             if use_model == model:
                 _TTS_STUCK[model] = 0
+            if attempt and (api, use_model, styled) != plan[0]:
+                log(f"TTS: voice made with {use_model} via {'interactions' if api == 'i' else 'generateContent'}"
+                    f"{'' if styled else ' (plain)'}")
             return wav_seconds(out_wav)
         except Exception as exc:
             last = exc
+            msg = str(exc)
             if isinstance(exc, TimeoutError):
                 _TTS_STUCK[use_model] = _TTS_STUCK.get(use_model, 0) + 1
                 if use_model == model and _TTS_STUCK[model] == 2:
                     log(f"TTS: {model} keeps hanging, using {backup} first for the rest of this run")
-            log(f"TTS attempt {attempt + 1} ({use_model}{'' if styled else ', plain'}) failed: {str(exc)[:160]} | text: {text[:80]}")
-            time.sleep(5 * (attempt + 1))
+            log(f"TTS attempt {attempt + 1} ({api}:{use_model}{'' if styled else ', plain'}) failed: {msg[:160]} | text: {text[:80]}")
+            if "not found" in msg.lower() or "404" in msg:
+                _TTS_DEAD.add((api, use_model))  # not served on this route today: do not ask again this run
+                continue
+            time.sleep(5 * min(attempt + 1, 4))
     raise RuntimeError(f"Voiceover failed: {last}")
 
 
