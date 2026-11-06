@@ -354,7 +354,8 @@ def _tts_classic(client, model, text, voice, style=""):
     if _TTS_V1BETA is None:  # speechConfig only exists on the v1beta generateContent API
         _TTS_V1BETA = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "").strip(), http_options={
             "api_version": "v1beta", "timeout": int(os.environ.get("GEMINI_TIMEOUT_MS", "240000"))})
-    prompt = f"Read the following aloud in this speaking style: {style}\n\n{text}" if style else text
+    # the style note is NOT put in the prompt: generateContent TTS reads any instruction aloud (heard on 6 Nov)
+    prompt = text
     resp = _TTS_V1BETA.models.generate_content(
         model=model, contents=prompt,
         config=types.GenerateContentConfig(
