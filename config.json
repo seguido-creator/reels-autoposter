@@ -284,6 +284,7 @@
       "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
       "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
       "image": {
+        "preview_overrides": {"image": {"look": "board"}},
         "slots": ["09:00", "16:30", "21:00"],
         "footer": "Practical help & encouragement for caregivers.",
         "angle": "DEMENTIA CAREGIVING: practical, widely recommended caregiving strategies (communication, routines, home safety, sundowning, mealtimes, caregiver self-care), gentle encouragement for caregivers, and common myths vs facts. Follow mainstream guidance from organisations like the Alzheimer's Association, Alzheimer's Society and NHS. Never suggest medications, supplements, cures or diagnoses; for symptoms or changes, say to talk to their doctor.",
@@ -444,6 +445,7 @@
       "audience": "History lovers in the US, UK, Canada and Australia, adults of all ages, curious about how world events connect across time.",
       "language": "Clear, vivid, conversational American English, like a great storyteller.",
       "image": {
+        "preview_overrides": {"image": {"look": "board"}},
         "slots": [
           "12:00",
           "19:00"

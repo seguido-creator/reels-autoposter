@@ -277,6 +277,41 @@ def _card_ok(sc):
     return True
 
 
+CARDS_PROMPT = """These are the voice-over lines of a short Reel for the Facebook Page "{brand}" (audience: {audience}).
+There is NO video footage: each scene is shown as an animated explainer card. For every scene, in the same order,
+write the card. Use ONLY words, numbers and terms that are in that scene's voice-over; never add a fact.
+
+{scenes}
+
+Return ONLY JSON: {{"cards": [one object per scene, in order]}}, each object:
+{card_field}"""
+
+
+def as_board(page, script):
+    """Same script, animated board look (used when no stock clip fits or the clip version fails QA). Adds a card
+    per scene with one short Gemini call; the voice-over and facts stay exactly as written and checked."""
+    import transform
+    from google.genai import types
+    lines = "\n".join(f"Scene {i + 1}: {sc['vo']}" for i, sc in enumerate(script["scenes"]))
+    prompt = CARDS_PROMPT.format(brand=page["brand"], audience=page["audience"], scenes=lines,
+                                 card_field=CARD_FIELD.replace(' For this page "search" may be "".', ""))
+    client = transform._gemini_client()
+    for _ in range(2):
+        resp, _model = transform.generate(client, prompt, types.GenerateContentConfig(
+            response_mime_type="application/json", temperature=0.4))
+        try:
+            data = json.loads(resp.text or "{}")
+        except Exception:
+            data = {}
+        cards = data.get("cards") if isinstance(data, dict) else data
+        if isinstance(cards, list) and len(cards) == len(script["scenes"]):
+            for sc, c in zip(script["scenes"], cards):
+                sc["card"] = c.get("card", c) if isinstance(c, dict) else {}
+            if all(_card_ok(sc) for sc in script["scenes"]):
+                return dict(page, image=dict(page["image"], look="board"))
+    raise RuntimeError("board fallback: could not write cards for every scene")
+
+
 def clean_timeline(items):
     """2-5 short {year, label} items for the animated end timeline; anything malformed drops the timeline."""
     out = []
@@ -1010,9 +1045,27 @@ def make(page, card, out_path, used_ids=()):
     m = re.search(r"#(\d+)", str(card.get("_series") or ""))
     script["_file_no"] = int(m.group(1)) if m else int(__import__("datetime").date.today().strftime("%j"))
     board = page["image"].get("look") == "board"
-    clips = [] if board else find_clips(page, script["scenes"], used_ids, card.get("_still"))
+    fallback = False  # True when a clip Reel was rebuilt in the animated board look
+    allow_board = page["image"].get("board_fallback", False)  # per page, switched on after owner approval
+    clips = []
+    if not board:
+        try:
+            clips = find_clips(page, script["scenes"], used_ids, card.get("_still"))
+        except Exception as exc:
+            if not allow_board:
+                raise
+            log(f"[{page['key']}] no fitting clips ({str(exc)[:100]}), using the animated board look instead")
+            page, board, fallback = as_board(page, script), True, True
     secs = render(page, script, clips, out_path)
-    qa = video_qa(page, out_path, script, card)  # raises when the finished Reel must not be posted
+    try:
+        qa = video_qa(page, out_path, script, card)  # raises when the finished Reel must not be posted
+    except RuntimeError as exc:
+        if board or not allow_board or "QA blocked" not in str(exc):
+            raise
+        log(f"[{page['key']}] clip Reel blocked by QA, rebuilding the same script in the animated board look")
+        page, board, fallback, clips = as_board(page, script), True, True, []
+        secs = render(page, script, clips, out_path)
+        qa = video_qa(page, out_path, script, card)
     tags = script.get("hashtags") or []
     if isinstance(tags, str):
         tags = tags.split()
@@ -1025,7 +1078,7 @@ def make(page, card, out_path, used_ids=()):
     ref = lambda c: str(c["id"])
     if board:
         log(f"[{page['key']}] board scenes: " + " | ".join(str((sc.get("card") or {}).get("title")) for sc in script["scenes"]))
-        return secs, message, ["board"] + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
+        return secs, message, ["board"] + (["fallback"] if fallback else []) + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
     log(f"[{page['key']}] explainer scenes: " + " | ".join(
         f"{sc['search']} -> {ref(c)} ({c.get('tags', '')[:40]})" for sc, c in zip(script["scenes"], clips)))
     return secs, message, [ref(c) for c in clips] + [f"hook:{script.get('hook_style', 'other')}", f"qa:{qa}"]
