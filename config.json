@@ -1,5 +1,15 @@
 {
   "graph_api_version": "v25.0",
+  "byahe": {
+    "live": false,
+    "folder": "Byahe ni Nanay - Queue",
+    "sheet_tab": "BYA",
+    "timezone": "Asia/Manila",
+    "post_time": "19:00",
+    "page_id_env": "FB_PAGE_ID_BYA",
+    "token_env": "FB_TOKEN_BYA",
+    "note": "Owner's own finished travel videos (Byahe ni Nanay). 1 post/day in queue.json order. live=true only after the owner approves."
+  },
   "photo_posts": false,
   "gemini_model_default": "gemini-3.8-flash",
   "tts_model_default": "gemini-3.8-flash-tts",

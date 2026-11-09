@@ -58,6 +58,8 @@ jobs:
       FB_TOKEN_HIST: ${{ secrets.FB_TOKEN_HIST }}
       FB_PAGE_ID_KAS: ${{ secrets.FB_PAGE_ID_KAS }}
       FB_TOKEN_KAS: ${{ secrets.FB_TOKEN_KAS }}
+      FB_PAGE_ID_BYA: ${{ secrets.FB_PAGE_ID_BYA }}
+      FB_TOKEN_BYA: ${{ secrets.FB_TOKEN_BYA }}
       RENDER_ENGINE: remotion
       MINUTES: ${{ inputs.minutes || '300' }}
       DRY_RUN: ${{ inputs.dry_run || 'no' }}
@@ -94,6 +96,7 @@ jobs:
               python autopost.py || { echo "::warning::autopost failed"; fails=$((fails+1)); }
               python images.py || { echo "::warning::images failed"; fails=$((fails+1)); }
               python community.py || { echo "::warning::community failed"; fails=$((fails+1)); }
+              python byahe.py || { echo "::warning::byahe failed"; fails=$((fails+1)); }
               python inbox.py || echo "::warning::inbox failed"
               python analytics.py || echo "::warning::analytics failed"
               python signals.py || echo "::warning::signals failed"

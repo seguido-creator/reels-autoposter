@@ -20,6 +20,7 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 | HOME | Home Hacks Decoded | US English, home tips | 2 AI Reels/day, US time zone |
 | HIST | History Decoded | US English, world history | 2 AI Reels/day, case-file look, secret-teller narrator (Fenrir) |
 | RET / CRED / MED / SMB | Retirement / Credit / Medical Bills / Small Business Decoded | US English, money basics | YouTube-only (youtube_only: true): Reel + sidecar saved to Published, no Facebook; fact-checked, sourced, general education only |
+| BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms, 1 post/day 19:00 PH from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; byahe.live=false until owner approves |
 | KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
@@ -56,4 +57,5 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-04: Approved numbers (owner): AI Reels/day US 2, HIST 2, DEM 3, HOME 2, PH 1 (+5 clip Reels), UAE 0, FIN 0, KAS 0; text posts stay. Spend cap stays US$50/month (option B). HIST case-file + secret-teller style is now the live default. Money series YouTube-only, 1/day each after preview approval (slots stay empty until then).
 - 2026-11-05: Money series (RET, CRED, MED, SMB) use the "board" look (animated explainer cards, no stock footage; stock clips failed QA for money topics). Owner approved going live: 1 Reel/day each at 10:00, 13:00, 15:00, 18:00 US Eastern, saved to the Published folder for shorts-crossposter.
 - 2026-11-06: Gemini Interactions API began answering 404 "Model not found" for both TTS models (about 16:47 UTC); all Reels failed or fell back to photos. transform._speak_take now skips dead routes and falls back to the classic generateContent API (v1beta) and config tts_extra_models. On that route the style note is NOT sent (it gets read aloud), so narrator tone is plainer until the Interactions route returns.
+- 2026-11-09: Byahe ni Nanay Page created (Graph Page ID in secret FB_PAGE_ID_BYA). byahe.py posts the owner's ready-made videos, no AI generation; long-forms via chunked /videos upload. Manual check: Actions > Byahe ni Nanay > check.
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.
