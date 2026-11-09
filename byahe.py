@@ -148,6 +148,10 @@ def main():
         log(f"[BYA] not due yet ({local:%H:%M} < {b['post_time']} {b['timezone']})")
         return
 
+    if check:
+        ok, name = page_name(page_id, token)
+        print(f"Page: {'OK ' + str(name) if ok else 'FAIL ' + str(name)}")
+
     creds = google_creds()
     drive = drive_service(creds)
     fid, files = folder_files(drive, b["folder"])
@@ -167,9 +171,7 @@ def main():
     nxt = next((q for q in queue if q["file"] not in done), None)
 
     if check:
-        ok, name = page_name(page_id, token)
         missing = [q["file"] for q in queue if q["file"] not in files]
-        print(f"Page: {'OK ' + name if ok else 'FAIL ' + str(name)}")
         print(f"Drive folder: {len(files)} files, queue {len(queue)} items, missing videos: {len(missing)}")
         for m in missing[:10]:
             print("  missing:", m)
