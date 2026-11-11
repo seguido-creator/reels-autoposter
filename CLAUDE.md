@@ -20,7 +20,7 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 | HOME | Home Hacks Decoded | US English, home tips | 2 AI Reels/day, US time zone |
 | HIST | History Decoded | US English, world history | 2 AI Reels/day, case-file look, secret-teller narrator (Fenrir) |
 | RET / CRED / MED / SMB | Retirement / Credit / Medical Bills / Small Business Decoded | US English, money basics | YouTube-only (youtube_only: true): Reel + sidecar saved to Published, no Facebook; fact-checked, sourced, general education only |
-| BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms, 1 post/day 19:00 PH from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; byahe.live=false until owner approves |
+| BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms, 1 post/day 19:00 PH from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; LIVE from 2026-11-12 (owner said go); covers from *_THUMB.jpg in the Drive folder; Reels over 90 s trimmed |
 | KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
@@ -60,4 +60,5 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-09: Byahe ni Nanay Page created (Graph Page ID in secret FB_PAGE_ID_BYA). byahe.py posts the owner's ready-made videos, no AI generation; long-forms via chunked /videos upload. Manual check: Actions > Byahe ni Nanay > check.
 - 2026-11-09: Owner approved "board fallback": about 4 in 10 Facebook Reels were going out as still photo cards. Now when no stock clip fits, or the clip version is blocked by video QA, the same checked script is rebuilt in the animated board look (explainer.as_board adds one card per scene with one short Gemini call); photo Reel stays the last resort. Switched on per page with image.board_fallback=true (off until the owner approves the DEM/HIST previews; preview_overrides look=board on DEM and HIST only for those previews). Note tag "board fallback".
 - 2026-11-11: Owner approved the DEM/HIST board previews: board_fallback is LIVE on US, DEM, HOME, HIST (preview_overrides removed).
+- 2026-11-11: Owner: Byahe ni Nanay goes live 2026-11-12 19:00 PH (byahe.live=true, start_date). Page photos via Actions > Byahe ni Nanay > photos.
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.

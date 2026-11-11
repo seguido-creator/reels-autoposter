@@ -7,7 +7,7 @@ on:
       task:
         description: "check = test token, Drive folder and queue (posts nothing). post-now = post the next video now (only when live)."
         type: choice
-        options: ["check", "post-now"]
+        options: ["check", "post-now", "photos"]
         default: check
 
 concurrency:
@@ -34,4 +34,4 @@ jobs:
       - run: sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt
       - name: Run
         run: |
-          if [ "${{ inputs.task }}" = "post-now" ]; then python byahe.py --now; else python byahe.py --check; fi
+          if [ "${{ inputs.task }}" = "post-now" ]; then python byahe.py --now; elif [ "${{ inputs.task }}" = "photos" ]; then python byahe.py --photos; else python byahe.py --check; fi

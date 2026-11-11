@@ -1,7 +1,8 @@
 {
   "graph_api_version": "v25.0",
   "byahe": {
-    "live": false,
+    "live": true,
+    "start_date": "2026-11-12",
     "folder": "Byahe ni Nanay - Queue",
     "sheet_tab": "BYA",
     "timezone": "Asia/Manila",

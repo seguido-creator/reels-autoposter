@@ -119,6 +119,30 @@ def set_cover(video_id, token, image_path):
         return False
 
 
+def set_page_photos(page_id, token, drive, files):
+    """Profile picture + cover from page_profile.jpg / page_cover.jpg in the Drive folder."""
+    import requests
+    tmp = Path(tempfile.mkdtemp())
+    for name, kind in (("page_profile.jpg", "profile"), ("page_cover.jpg", "cover")):
+        if name not in files:
+            print(f"{kind}: {name} not in Drive folder")
+            continue
+        p = tmp / name
+        download(drive, files[name]["id"], p)
+        with open(p, "rb") as fh:
+            r = requests.post(f"{graph()}/{page_id}/photos", data={"published": "false", "access_token": token},
+                              files={"source": (name, fh, "image/jpeg")}, timeout=120)
+        if not r.ok:
+            print(f"{kind}: photo upload failed {r.status_code} {r.text[:300]}")
+            continue
+        pid = r.json()["id"]
+        if kind == "profile":
+            r = requests.post(f"{graph()}/{page_id}/picture", data={"photo": pid, "access_token": token}, timeout=60)
+        else:
+            r = requests.post(f"{graph()}/{page_id}", data={"cover": pid, "access_token": token}, timeout=60)
+        print(f"{kind}: {r.status_code} {r.text[:300]}")
+
+
 def post_reel(page_id, token, path, caption):
     from autopost import publish_reel
     return publish_reel(page_id, token, str(path), caption, load_config()["graph_api_version"])
@@ -161,12 +185,12 @@ def post_video(page_id, token, path, title, description):
 # ---------------------------------------------------------------- main
 def main():
     args = sys.argv[1:]
-    check, now_flag = "--check" in args, "--now" in args
+    check, now_flag, photos = "--check" in args, "--now" in args, "--photos" in args
     b = settings()
     page_id = os.environ.get(b["page_id_env"], "").strip()
     token = os.environ.get(b["token_env"], "").strip()
 
-    if not check and not b["live"]:
+    if not check and not photos and not b["live"]:
         log("[BYA] not live yet (config byahe.live=false), skipping")
         return
     if not page_id or not token:
@@ -177,7 +201,11 @@ def main():
     local = dt.datetime.now(tz)
     hh, mm = map(int, b["post_time"].split(":"))
     due_time = local.replace(hour=hh, minute=mm, second=0, microsecond=0)
-    if not check and not now_flag and local < due_time:
+    start = b.get("start_date")
+    if not check and not photos and start and local.date().isoformat() < start:
+        log(f"[BYA] starts on {start}")
+        return
+    if not check and not photos and not now_flag and local < due_time:
         log(f"[BYA] not due yet ({local:%H:%M} < {b['post_time']} {b['timezone']})")
         return
 
@@ -190,6 +218,9 @@ def main():
     fid, files = folder_files(drive, b["folder"])
     if not fid:
         log(f"[BYA] Drive folder '{b['folder']}' not found")
+        return
+    if photos:
+        set_page_photos(page_id, token, drive, files)
         return
     queue = load_queue(drive, files)
     if not queue:
