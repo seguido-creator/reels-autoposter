@@ -86,6 +86,39 @@ def page_name(page_id, token):
     return r.ok, r.json().get("name") if r.ok else r.text[:300]
 
 
+def fit_reel(path, limit=89.5):
+    """Reels API accepts 3-90 s. Trim a slightly long Reel with a soft fade (needs ffmpeg)."""
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        return path
+    dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+                                str(path)], capture_output=True, text=True).stdout or 0)
+    if dur <= limit:
+        return path
+    out = path.with_name(path.stem + "_fit.mp4")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-t", str(limit),
+                    "-vf", f"fade=t=out:st={limit - 1.2}:d=1.2", "-af", f"afade=t=out:st={limit - 2}:d=2",
+                    "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
+                    "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)], check=True)
+    log(f"[BYA] trimmed {dur:.1f}s -> {limit}s for the Reels limit")
+    return out
+
+
+def set_cover(video_id, token, image_path):
+    """Custom cover from the owner's thumbnail. Never fails the post."""
+    import requests
+    try:
+        with open(image_path, "rb") as fh:
+            r = requests.post(f"{graph()}/{video_id}/thumbnails", data={"is_preferred": "true", "access_token": token},
+                              files={"source": ("thumb.jpg", fh, "image/jpeg")}, timeout=120)
+        log(f"[BYA] cover: {r.status_code} {r.text[:200]}")
+        return r.ok
+    except Exception as exc:
+        log(f"[BYA] cover not set: {exc}")
+        return False
+
+
 def post_reel(page_id, token, path, caption):
     from autopost import publish_reel
     return publish_reel(page_id, token, str(path), caption, load_config()["graph_api_version"])
@@ -172,6 +205,8 @@ def main():
 
     if check:
         missing = [q["file"] for q in queue if q["file"] not in files]
+        covers = sum(1 for q in queue if q["file"][:-4] + "_THUMB.jpg" in files)
+        print(f"Covers (thumbnails) in Drive: {covers}/{len(queue)}")
         print(f"Drive folder: {len(files)} files, queue {len(queue)} items, missing videos: {len(missing)}")
         for m in missing[:10]:
             print("  missing:", m)
@@ -198,9 +233,15 @@ def main():
     rownum = len(ws.get_all_values())
     try:
         if nxt["type"].lower().startswith("reel"):
-            vid, status = post_reel(page_id, token, path, nxt["caption"])
+            vid, status = post_reel(page_id, token, fit_reel(path), nxt["caption"])
         else:
             vid, status = post_video(page_id, token, path, nxt["title"], nxt["caption"])
+        thumb = nxt["file"][:-4] + "_THUMB.jpg"
+        if thumb in files:
+            tp = path.with_name(thumb)
+            download(drive, files[thumb]["id"], tp)
+            if set_cover(vid, token, tp):
+                status += ", cover set"
         ws.update(f"E{rownum}:H{rownum}", [["posted", row[5], str(vid), status]], value_input_option="RAW")
         log(f"[BYA] posted #{nxt['n']} {nxt['file']} -> {vid} ({status})")
     except Exception as exc:
