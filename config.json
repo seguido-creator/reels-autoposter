@@ -52,6 +52,7 @@
       ],
       "content_angle": "CARS. Explain the engineering, physics, design, history or driving technique behind what we see: why it sounds like that, how the part works, why designers did it, what a driver should know. Name a car model only if it is unmistakable; otherwise say 'this car' or the body type.",
       "image": {
+        "board_fallback": true,
         "slots": ["12:00", "17:00"],
         "footer": "Cars, explained. Follow for daily car facts.",
         "types": [
@@ -284,7 +285,7 @@
       "audience": "Family caregivers of people living with dementia or Alzheimer's, mostly in the US, UK, Canada and Australia, often tired and looking for practical help and encouragement.",
       "language": "Gentle, warm, clear English. Person-first language ('a person living with dementia').",
       "image": {
-        "preview_overrides": {"image": {"look": "board"}},
+        "board_fallback": true,
         "slots": ["09:00", "16:30", "21:00"],
         "footer": "Practical help & encouragement for caregivers.",
         "angle": "DEMENTIA CAREGIVING: practical, widely recommended caregiving strategies (communication, routines, home safety, sundowning, mealtimes, caregiver self-care), gentle encouragement for caregivers, and common myths vs facts. Follow mainstream guidance from organisations like the Alzheimer's Association, Alzheimer's Society and NHS. Never suggest medications, supplements, cures or diagnoses; for symptoms or changes, say to talk to their doctor.",
@@ -392,6 +393,7 @@
       "audience": "Renters and homeowners in the US (plus Canada, the UK and Australia), often in apartments or starter homes, who like simple, safe cleaning, organising, small-space and moving hacks.",
       "language": "Simple, clear American English.",
       "image": {
+        "board_fallback": true,
         "slots": ["12:00", "19:00"],
         "footer": "Cleaning, organising & moving hacks.",
         "angle": "HOME HACKS: cleaning shortcuts, organising and small-apartment space savers, packing and moving tips, keeping a home fresh and comfortable through the seasons. Only safe methods: never suggest mixing cleaning chemicals (e.g. bleach with vinegar or ammonia), always say to spot-test first.",
@@ -445,7 +447,7 @@
       "audience": "History lovers in the US, UK, Canada and Australia, adults of all ages, curious about how world events connect across time.",
       "language": "Clear, vivid, conversational American English, like a great storyteller.",
       "image": {
-        "preview_overrides": {"image": {"look": "board"}},
+        "board_fallback": true,
         "slots": [
           "12:00",
           "19:00"
