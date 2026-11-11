@@ -136,6 +136,9 @@ def set_page_photos(page_id, token, drive, files):
             print(f"{kind}: photo upload failed {r.status_code} {r.text[:300]}")
             continue
         pid = r.json()["id"]
+        img = requests.get(f"{graph()}/{pid}", params={"fields": "images", "access_token": token}, timeout=60).json()
+        big = max(img.get("images", [{}]), key=lambda i: i.get("width", 0)).get("source", "")
+        print(f"{kind} photo url: {big}")
         if kind == "profile":
             r = requests.post(f"{graph()}/{page_id}/picture", data={"photo": pid, "access_token": token}, timeout=60)
         else:
