@@ -43,7 +43,9 @@ def cut(src, dst, a, b, preset):
 
 KEYS = ("91", "ninety", "mashallah", "masha", "alhamdulillah", "years old")
 def transcript(p, ss, t, label, model):
-    seg, _ = model.transcribe(str(p) if ss is None else str(clip(p, ss, t)), language="tl")
+    cmd = ["ffmpeg", "-v", "error"] + (["-ss", str(ss), "-t", str(t)] if ss is not None else []) + ["-i", str(p), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"]
+    audio = np.frombuffer(subprocess.run(cmd, capture_output=True).stdout, np.int16).astype(np.float32) / 32768
+    seg, _ = model.transcribe(audio, language="tl")
     hits = 0
     for s in seg:
         t0 = (ss or 0) + s.start
