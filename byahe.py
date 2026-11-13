@@ -61,7 +61,7 @@ def load_queue(drive, files):
         return None
     tmp = Path(tempfile.mkdtemp()) / "queue.json"
     download(drive, files["queue.json"]["id"], tmp)
-    return sorted(json.loads(tmp.read_text(encoding="utf-8")), key=lambda x: x["n"])
+    return json.loads(tmp.read_text(encoding="utf-8"))  # file order is the posting order (n can be "10b")
 
 
 # ---------------------------------------------------------------- Sheet
