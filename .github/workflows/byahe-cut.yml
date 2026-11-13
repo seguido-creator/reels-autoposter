@@ -1,0 +1,37 @@
+name: Byahe ni Nanay - cut scene
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        type: choice
+        options: ["make", "queue"]
+        default: make
+
+concurrency:
+  group: byahe
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+      SHEET_ID: ${{ secrets.SHEET_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt numpy faster-whisper
+      - run: python byahe_cut.py ${{ inputs.step }}
+      - if: inputs.step == 'make'
+        uses: actions/upload-artifact@v4
+        with:
+          name: previews
+          path: out/preview_*.mp4
+          retention-days: 1

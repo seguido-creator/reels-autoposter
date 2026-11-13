@@ -47,8 +47,10 @@ def folder_files(drive, name):
     fid = found[0]["id"]
     files, token = {}, None
     while True:
+        # oldest first, so when two files share a name (e.g. a newer queue.json) the newest wins
         resp = drive.files().list(q=f"'{fid}' in parents and trashed=false", pageSize=1000,
-                                  fields="nextPageToken, files(id,name,size)", pageToken=token).execute()
+                                  orderBy="createdTime", fields="nextPageToken, files(id,name,size)",
+                                  pageToken=token).execute()
         for f in resp.get("files", []):
             files[f["name"]] = f
         token = resp.get("nextPageToken")
@@ -239,7 +241,7 @@ def main():
 
     if check:
         missing = [q["file"] for q in queue if q["file"] not in files]
-        covers = sum(1 for q in queue if q["file"][:-4] + "_THUMB.jpg" in files)
+        covers = sum(1 for q in queue if (q.get("thumb") or q["file"][:-4] + "_THUMB.jpg") in files)
         print(f"Covers (thumbnails) in Drive: {covers}/{len(queue)}")
         print(f"Drive folder: {len(files)} files, queue {len(queue)} items, missing videos: {len(missing)}")
         for m in missing[:10]:
@@ -270,7 +272,7 @@ def main():
             vid, status = post_reel(page_id, token, fit_reel(path), nxt["caption"])
         else:
             vid, status = post_video(page_id, token, path, nxt["title"], nxt["caption"])
-        thumb = nxt["file"][:-4] + "_THUMB.jpg"
+        thumb = nxt.get("thumb") or nxt["file"][:-4] + "_THUMB.jpg"
         if thumb in files:
             tp = path.with_name(thumb)
             download(drive, files[thumb]["id"], tp)
