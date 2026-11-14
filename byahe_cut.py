@@ -12,6 +12,7 @@ from byahe import folder_files
 FOLDER = "Byahe ni Nanay - Queue"
 REEL, LF = "046_KZ-K03-R1.mp4", "051_KZ-Nanay-LongForm_v2.mp4"
 REEL2, LF2 = "046_KZ-K03-R1_v2.mp4", "051_KZ-Nanay-LongForm_v2_v2.mp4"
+REEL3, LF3 = "046_KZ-K03-R1_v3.mp4", "051_KZ-Nanay-LongForm_v2_v3.mp4"
 A, B = 7.8, 20.6          # the scene inside the Reel (from the K03 spec: 3 voice shots of 4.8 s, 0.8 s cross-fades)
 OUT = Path("out"); OUT.mkdir(exist_ok=True)
 
@@ -80,16 +81,62 @@ def make():
         i, _ = upload_render(drive, p, n, fid); log(f"[CUT] uploaded {n} -> {i}")
     json.dump({"lf_cut_start": off}, open(OUT / "cut.json", "w"))
 
-def queue():
+def words(p, model):
+    cmd = ["ffmpeg", "-v", "error", "-i", str(p), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"]
+    audio = np.frombuffer(subprocess.run(cmd, capture_output=True).stdout, np.int16).astype(np.float32) / 32768
+    seg, _ = model.transcribe(audio, language="tl", word_timestamps=True)
+    return [w for s in seg for w in s.words]
+
+def cut_span(src, dst, a, b, preset):
+    """Remove [a, b] with a 0.12 s blend (a short jump cut inside the same shot)."""
+    d = dur(src); f = 0.12
+    fc = (f"[0:v]trim=0:{a},setpts=PTS-STARTPTS[v0];[0:v]trim={b}:{d},setpts=PTS-STARTPTS[v1];"
+          f"[v0][v1]xfade=transition=fade:duration={f}:offset={a-f}[v];"
+          f"[0:a]atrim=0:{a},asetpts=PTS-STARTPTS[a0];[0:a]atrim={b}:{d},asetpts=PTS-STARTPTS[a1];"
+          f"[a0][a1]acrossfade=d={f}[a]")
+    sh("ffmpeg","-v","error","-y","-i",str(src),"-filter_complex",fc,"-map","[v]","-map","[a]","-c:v","libx264","-crf","19",
+       "-preset",preset,"-r","30","-c:a","aac","-b:a","192k","-ar","48000","-movflags","+faststart",str(dst))
+    log(f"[CUT] {dst.name}: {d:.1f}s -> {dur(dst):.1f}s (removed {a:.2f}-{b:.2f})")
+
+def mestiza():
+    """Remove the line 'Kasi mestiza naman na eh' after 'Sanay na' (owner approved 2026-11-14), then point the queue at v3."""
+    from faster_whisper import WhisperModel
+    m = WhisperModel("small", compute_type="int8")
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    tmp = Path(tempfile.mkdtemp())
+    for src_name, dst_name, preset in ((REEL2, REEL3, "medium"), (LF2, LF3, "veryfast")):
+        src = tmp / src_name; download(drive, files[src_name]["id"], src)
+        ws = words(src, m)
+        hits = [i for i, w in enumerate(ws) if any(k in w.word.lower() for k in ("mest", "mist", "tisa", "tiza"))]
+        hits = [i for i in hits if any("sanay" in ws[j].word.lower() for j in range(max(0, i - 6), i))]
+        print(src_name, "hits:", [(round(ws[i].start, 1), ws[i].word) for i in hits])
+        if len(hits) != 1: sys.exit(f"[CUT] expected one 'mestiza' after 'sanay' in {src_name}, found {len(hits)}")
+        i = hits[0]
+        k = next((k for k in range(i - 3, i) if k >= 0 and "kasi" in ws[k].word.lower()), i)
+        end_i = i
+        while end_i + 1 < len(ws) and ws[end_i + 1].start - ws[end_i].end < 0.6 and end_i - i < 4:
+            end_i += 1
+        a, b = ws[k].start - 0.08, ws[end_i].end + 0.12
+        print(f"  cutting {a:.2f}-{b:.2f}:", " ".join(w.word.strip() for w in ws[k:end_i + 1]))
+        if b - a > 4: sys.exit("[CUT] span too long, stopping")
+        dst = OUT / dst_name; cut_span(src, dst, a, b, preset)
+        after = words(dst, m)
+        left = [w.word for w in after if any(kk in w.word.lower() for kk in ("mest", "mist", "tisa", "tiza"))]
+        print("  after cut, remaining:", left)
+        if left: sys.exit("[CUT] the word is still there, nothing uploaded")
+        if dst_name not in files:
+            iid, _ = upload_render(drive, dst, dst_name, fid); log(f"[CUT] uploaded {dst_name} -> {iid}")
+
+def queue(reel_new=REEL2, lf_new=LF2):
     from googleapiclient.http import MediaFileUpload
     drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
-    if REEL2 not in files or LF2 not in files: sys.exit("[CUT] *_v2 videos not in Drive")
+    if reel_new not in files or lf_new not in files: sys.exit("[CUT] new videos not in Drive")
     tmp = Path(tempfile.mkdtemp()) / "queue.json"; download(drive, files["queue.json"]["id"], tmp)
     q = json.loads(tmp.read_text(encoding="utf-8"))
     for x in q:
-        if x["file"] == REEL: x.update(file=REEL2, thumb="046_KZ-K03-R1_THUMB.jpg")
-        if x["file"] == LF:
-            x.update(file=LF2, thumb="051_KZ-Nanay-LongForm_v2_THUMB.jpg")
+        if x["file"] in (REEL, REEL2, REEL3): x.update(file=reel_new, thumb="046_KZ-K03-R1_THUMB.jpg")
+        if x["file"] in (LF, LF2, LF3):
+            x.update(file=lf_new, thumb="051_KZ-Nanay-LongForm_v2_THUMB.jpg")
             x["caption"] = x["caption"].replace(" 91 na ako, pero kaya pa!", "")
     assert not any("91 na ako" in x["caption"] for x in q)
     tmp.write_text(json.dumps(q, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -98,4 +145,7 @@ def queue():
     log(f"[CUT] new queue.json {f['id']} ({len(q)} items)")
 
 if __name__ == "__main__":
-    {"make": make, "queue": queue}[sys.argv[1]]()
+    if sys.argv[1] == "mestiza":
+        mestiza(); queue(REEL3, LF3)
+    else:
+        {"make": make, "queue": queue}[sys.argv[1]]()

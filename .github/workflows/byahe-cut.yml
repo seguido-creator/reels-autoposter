@@ -5,7 +5,7 @@ on:
     inputs:
       step:
         type: choice
-        options: ["make", "queue"]
+        options: ["make", "queue", "mestiza"]
         default: make
 
 concurrency:
