@@ -144,8 +144,83 @@ def queue(reel_new=REEL2, lf_new=LF2):
                              media_body=MediaFileUpload(str(tmp), mimetype="application/json"), fields="id").execute()
     log(f"[CUT] new queue.json {f['id']} ({len(q)} items)")
 
+# ---- fact-check patches (2026-11-17): replace the frames of a few on-screen captions in the long-forms ----
+LF_PATCHES = {
+    "008_OM-Muscat-LongForm_v3_v2.mp4": ["patch_OM2_06_M06_s16.mp4"],
+    "019_GE-Nanay-LongForm_v3.mp4": ["patch_GE2_05_G05_s5.mp4"],
+    "027_AM-Nanay-LongForm_v3_v2.mp4": ["patch_AM2_02_A02_s9.mp4", "patch_AM2_06_A06_s5.mp4", "patch_AM2_06_A06_s8.mp4"],
+    "043_OM-Salalah-LongForm_v3.mp4": ["patch_SL2_04_S04_s8.mp4"],
+    "051_KZ-Nanay-LongForm_v2_v3.mp4": ["patch_KZ_04_K04_s14.mp4", "patch_KZ_06_K06_s3.mp4", "patch_KZ_06_K06_s11.mp4"],
+}
+W_, H_ = 54, 96
+def gray_frames(p, w=W_, h=H_):
+    r = subprocess.run(["ffmpeg", "-v", "error", "-i", str(p), "-vf", f"fps=30,scale={w}:{h},format=gray", "-f", "rawvideo", "-"], capture_output=True)
+    f = np.frombuffer(r.stdout, np.uint8); n = len(f) // (w * h)
+    return f[:n * w * h].reshape(n, h, w).astype(np.float32)
+
+def match(lf_frames, pf):
+    """Best start frame of patch pf inside lf_frames; the caption band (rows 55-86 of 96) is masked out."""
+    mask = np.ones((H_, W_), bool); mask[55:87] = False
+    L = lf_frames[:, mask]; P = pf[:, mask]; n, m = len(L), len(P)
+    acc = np.zeros(n - m + 1, np.float32); js = list(range(0, m, 5))
+    for j in js:
+        acc += np.abs(L[j:j + n - m + 1] - P[j]).mean(axis=1)
+    acc /= len(js)
+    i = int(np.argmin(acc)); best = float(acc[i])
+    far = np.delete(acc, range(max(0, i - 60), min(len(acc), i + 60)))
+    return i, best, float(far.min()) if len(far) else 1e9
+
+def patch_lf():
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    tmp = Path(tempfile.mkdtemp()); done = {}
+    for lf_name, patches in LF_PATCHES.items():
+        out_name = lf_name[:-4] + "_fx.mp4"
+        if out_name in files: log(f"[FIX] {out_name} already in Drive"); done[lf_name] = out_name; continue
+        if lf_name not in files: log(f"[FIX] {lf_name} not in Drive, skipped"); continue
+        lf = tmp / lf_name; download(drive, files[lf_name]["id"], lf)
+        L = gray_frames(lf); log(f"[FIX] {lf_name}: {len(L)} frames")
+        ins, flt, prev = ["-i", str(lf)], [], "[0:v]"
+        for k, pn in enumerate(patches, 1):
+            pp = tmp / pn; download(drive, files[pn]["id"], pp)
+            P = gray_frames(pp); i, best, second = match(L, P)
+            t0 = i / 30.0; d = len(P) / 30.0
+            log(f"[FIX]   {pn}: at {t0:.2f}s, err {best:.2f} (next {second:.2f})")
+            if best > 6 or second < best * 2.5:
+                sys.exit(f"[FIX] no clear match for {pn} in {lf_name}; nothing uploaded")
+            ins += ["-i", str(pp)]
+            flt.append(f"[{k}:v]setpts=PTS-STARTPTS+{t0:.4f}/TB[p{k}];{prev}[p{k}]overlay=0:0:enable='between(t,{t0:.4f},{t0 + d - 0.02:.4f})':eof_action=pass[v{k}]")
+            prev = f"[v{k}]"
+        out = OUT / out_name
+        sh("ffmpeg", "-v", "error", "-y", *ins, "-filter_complex", ";".join(flt), "-map", prev, "-map", "0:a", "-c:v", "libx264", "-crf", "19",
+           "-preset", "veryfast", "-r", "30", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", str(out))
+        log(f"[FIX] {out_name}: {dur(lf):.1f}s -> {dur(out):.1f}s")
+        if abs(dur(out) - dur(lf)) > 0.3: sys.exit("[FIX] duration changed, nothing uploaded")
+        for k, pn in enumerate(patches, 1):
+            P = gray_frames(tmp / pn); O2 = gray_frames(out)
+            i, best, _ = match(O2, P)
+            full = float(np.abs(O2[i:i + len(P)] - P[:len(O2) - i]).mean())
+            log(f"[FIX]   check {pn}: frames now match with full-frame error {full:.2f}")
+            if full > 6: sys.exit(f"[FIX] patched frames do not match {pn}; nothing uploaded")
+            sh("ffmpeg", "-v", "error", "-y", "-ss", f"{i / 30 + len(P) / 60:.2f}", "-i", str(out), "-frames:v", "1", "-vf", "scale=360:-2", str(OUT / f"check_{out_name[:3]}_{k}.jpg"))
+        iid, _ = upload_render(drive, out, out_name, fid); log(f"[FIX] uploaded {out_name} -> {iid}"); done[lf_name] = out_name
+        out.unlink(); lf.unlink()
+    from googleapiclient.http import MediaFileUpload
+    fid, files = folder_files(drive, FOLDER)
+    qp = tmp / "queue.json"; download(drive, files["queue.json"]["id"], qp)
+    q = json.loads(qp.read_text(encoding="utf-8")); n = 0
+    for x in q:
+        if x["file"] in done:
+            x.setdefault("thumb", x["file"][:-4] + "_THUMB.jpg"); x["file"] = done[x["file"]]; n += 1
+    if not n: log("[FIX] queue already up to date"); return
+    qp.write_text(json.dumps(q, ensure_ascii=False, indent=1), encoding="utf-8")
+    f = drive.files().create(body={"name": "queue.json", "parents": [fid]},
+                             media_body=MediaFileUpload(str(qp), mimetype="application/json"), fields="id").execute()
+    log(f"[FIX] new queue.json {f['id']} ({n} long-forms switched)")
+
 if __name__ == "__main__":
-    if sys.argv[1] == "mestiza":
+    if sys.argv[1] == "patch":
+        patch_lf()
+    elif sys.argv[1] == "mestiza":
         mestiza(); queue(REEL3, LF3)
     else:
         {"make": make, "queue": queue}[sys.argv[1]]()
