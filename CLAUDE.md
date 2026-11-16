@@ -63,3 +63,4 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-11: Owner: Byahe ni Nanay goes live 2026-11-12 19:00 PH (byahe.live=true, start_date). Page photos via Actions > Byahe ni Nanay > photos.
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.
 - 2026-11-16: Owner: Byahe ni Nanay posts twice a day (12:00 and 19:00 PH, config byahe.post_times). Queue is posted in queue.json file order; the newest queue.json in Drive wins; entries may set "thumb".
+- 2026-11-16: Owner: sneak peek ("Abangan") teaser of the next country after each country; queue items can set "hold_days" (rest days after that item before the next post).

@@ -256,6 +256,17 @@ def main():
     if not nxt:
         log("[BYA] queue finished, nothing left to post")
         return
+    # "hold_days" on a queue item = rest days after it (e.g. a sneak peek between countries)
+    by_file = {q["file"]: q for q in queue}
+    posted_rows = [r for r in rows if len(r) > 5 and r[5] and r[4] == "posted"]
+    if posted_rows and not now_flag:
+        last = max(posted_rows, key=lambda r: r[5])
+        hold = int(by_file.get(last[1], {}).get("hold_days", 0) or 0)
+        if hold:
+            resume = dt.datetime.fromisoformat(last[5]).astimezone(tz).date() + dt.timedelta(days=hold)
+            if local.date() < resume:
+                log(f"[BYA] resting after {last[1]} until {resume.isoformat()}")
+                return
     if len(todays) >= slots_due and not now_flag:
         log(f"[BYA] already posted {len(todays)} today ({todays[-1][1]}); next slot later")
         return
