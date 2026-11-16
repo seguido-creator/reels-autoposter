@@ -28,6 +28,7 @@ def settings():
     b.setdefault("sheet_tab", "BYA")
     b.setdefault("timezone", "Asia/Manila")
     b.setdefault("post_time", "19:00")
+    b.setdefault("post_times", [b["post_time"]])
     b.setdefault("live", False)
     b.setdefault("page_id_env", "FB_PAGE_ID_BYA")
     b.setdefault("token_env", "FB_TOKEN_BYA")
@@ -204,14 +205,16 @@ def main():
 
     tz = ZoneInfo(b["timezone"])
     local = dt.datetime.now(tz)
-    hh, mm = map(int, b["post_time"].split(":"))
-    due_time = local.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    slots = sorted(local.replace(hour=int(t.split(":")[0]), minute=int(t.split(":")[1]), second=0, microsecond=0)
+                   for t in b["post_times"])
+    slots_due = sum(1 for t in slots if local >= t)   # how many posts are allowed by now today
+    due_time = slots[0]
     start = b.get("start_date")
     if not check and not photos and start and local.date().isoformat() < start:
         log(f"[BYA] starts on {start}")
         return
     if not check and not photos and not now_flag and local < due_time:
-        log(f"[BYA] not due yet ({local:%H:%M} < {b['post_time']} {b['timezone']})")
+        log(f"[BYA] not due yet ({local:%H:%M} < {b['post_times'][0]} {b['timezone']})")
         return
 
     if check:
@@ -247,14 +250,14 @@ def main():
         for m in missing[:10]:
             print("  missing:", m)
         print(f"Posted so far: {len(done)}; next: {nxt['file'] if nxt else 'none (all done)'}")
-        print(f"Live: {b['live']}; posts daily at {b['post_time']} {b['timezone']}")
+        print(f"Live: {b['live']}; posts daily at {', '.join(b['post_times'])} {b['timezone']}")
         return
 
     if not nxt:
         log("[BYA] queue finished, nothing left to post")
         return
-    if todays and not now_flag:
-        log(f"[BYA] already posted today ({todays[-1][1]})")
+    if len(todays) >= slots_due and not now_flag:
+        log(f"[BYA] already posted {len(todays)} today ({todays[-1][1]}); next slot later")
         return
     if nxt["file"] not in files:
         log(f"[BYA] video not in Drive yet: {nxt['file']} (still uploading?)")

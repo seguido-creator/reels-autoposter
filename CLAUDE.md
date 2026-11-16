@@ -20,7 +20,7 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 | HOME | Home Hacks Decoded | US English, home tips | 2 AI Reels/day, US time zone |
 | HIST | History Decoded | US English, world history | 2 AI Reels/day, case-file look, secret-teller narrator (Fenrir) |
 | RET / CRED / MED / SMB | Retirement / Credit / Medical Bills / Small Business Decoded | US English, money basics | YouTube-only (youtube_only: true): Reel + sidecar saved to Published, no Facebook; fact-checked, sourced, general education only |
-| BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms, 1 post/day 19:00 PH from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; LIVE from 2026-11-12 (owner said go); covers from *_THUMB.jpg in the Drive folder; Reels over 90 s trimmed |
+| BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms + Part 2s + Uzbekistan, 2 posts/day 12:00 and 19:00 PH (owner, 2026-11-16) from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; LIVE from 2026-11-12 (owner said go); covers from *_THUMB.jpg in the Drive folder; Reels over 90 s trimmed |
 | KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
@@ -62,3 +62,4 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-11: Owner approved the DEM/HIST board previews: board_fallback is LIVE on US, DEM, HOME, HIST (preview_overrides removed).
 - 2026-11-11: Owner: Byahe ni Nanay goes live 2026-11-12 19:00 PH (byahe.live=true, start_date). Page photos via Actions > Byahe ni Nanay > photos.
 - Next: animated text scenes instead of stock footage when nothing fits; one fixed look per page; narrators for the other pages.
+- 2026-11-16: Owner: Byahe ni Nanay posts twice a day (12:00 and 19:00 PH, config byahe.post_times). Queue is posted in queue.json file order; the newest queue.json in Drive wins; entries may set "thumb".

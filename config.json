@@ -7,6 +7,7 @@
     "sheet_tab": "BYA",
     "timezone": "Asia/Manila",
     "post_time": "19:00",
+    "post_times": ["12:00", "19:00"],
     "page_id_env": "FB_PAGE_ID_BYA",
     "token_env": "FB_TOKEN_BYA",
     "note": "Owner's own finished travel videos (Byahe ni Nanay). 1 post/day in queue.json order. live=true only after the owner approves."
