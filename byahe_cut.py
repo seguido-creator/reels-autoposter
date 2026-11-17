@@ -262,8 +262,18 @@ def frames(name, a, b, step=1.0):
     out = f"frames_{name[:-4]}_{int(a)}.jpg"
     iid, _ = upload_render(drive, OUT / "sheet.jpg", out, fid, mime="image/jpeg"); log(f"[CUT] {out} -> {iid}")
 
+def cutspan_step(src_name, dst_name, a, b, thumb):
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    tmp = Path(tempfile.mkdtemp()); src = tmp / src_name; download(drive, files[src_name]["id"], src)
+    if b - a > 12: sys.exit("[CUT] span too long")
+    dst = OUT / dst_name; cut(src, dst, a, b, "veryfast")
+    iid, _ = upload_render(drive, dst, dst_name, fid); log(f"[CUT] uploaded {dst_name} -> {iid}")
+    requeue(src_name, dst_name, thumb)
+
 if __name__ == "__main__":
-    if sys.argv[1] == "frames":
+    if sys.argv[1] == "cutspan":
+        cutspan_step(sys.argv[2], sys.argv[3], float(sys.argv[4]), float(sys.argv[5]), sys.argv[6])
+    elif sys.argv[1] == "frames":
         frames(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
     elif sys.argv[1] == "salalah-georgia":
         cut_phrase("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", ("georgia", "georgie", "jorja"), label="CUT")

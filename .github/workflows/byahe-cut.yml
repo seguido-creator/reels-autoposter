@@ -5,7 +5,7 @@ on:
     inputs:
       step:
         type: choice
-        options: ["make", "queue", "mestiza", "patch", "salalah-georgia", "frames"]
+        options: ["make", "queue", "mestiza", "patch", "salalah-georgia", "frames", "cutspan"]
         default: make
       args:
         type: string
