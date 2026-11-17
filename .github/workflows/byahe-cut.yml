@@ -5,7 +5,7 @@ on:
     inputs:
       step:
         type: choice
-        options: ["make", "queue", "mestiza", "patch"]
+        options: ["make", "queue", "mestiza", "patch", "salalah-georgia"]
         default: make
 
 concurrency:

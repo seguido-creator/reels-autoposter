@@ -217,8 +217,47 @@ def patch_lf():
                              media_body=MediaFileUpload(str(qp), mimetype="application/json"), fields="id").execute()
     log(f"[FIX] new queue.json {f['id']} ({n} long-forms switched)")
 
+def cut_phrase(src_name, dst_name, must, near=None, label="CUT"):
+    """Cut one spoken sentence (faster-whisper segment containing `must`) out of a Drive video; returns dst path or exits."""
+    from faster_whisper import WhisperModel
+    m = WhisperModel("small", compute_type="int8")
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    if dst_name in files: log(f"[{label}] {dst_name} already in Drive"); return None
+    tmp = Path(tempfile.mkdtemp()); src = tmp / src_name; download(drive, files[src_name]["id"], src)
+    cmd = ["ffmpeg", "-v", "error", "-i", str(src), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"]
+    audio = np.frombuffer(subprocess.run(cmd, capture_output=True).stdout, np.int16).astype(np.float32) / 32768
+    segs = list(m.transcribe(audio, language="tl", word_timestamps=True)[0])
+    hits = [s for s in segs if any(k in s.text.lower() for k in must)]
+    for s in hits: print(f"  hit {s.start:.2f}-{s.end:.2f}: {s.text}")
+    if len(hits) != 1: sys.exit(f"[{label}] expected one sentence with {must} in {src_name}, found {len(hits)}")
+    h = hits[0]; a, b = h.start - 0.1, h.end + 0.15
+    if b - a > 9: sys.exit(f"[{label}] span too long ({b-a:.1f}s), stopping")
+    dst = OUT / dst_name; cut_span(src, dst, a, b, "veryfast")
+    after = m.transcribe(np.frombuffer(subprocess.run(["ffmpeg","-v","error","-ss",str(max(0,a-20)),"-t","40","-i",str(dst),"-ac","1","-ar","16000","-f","s16le","-"],capture_output=True).stdout,np.int16).astype(np.float32)/32768, language="tl")[0]
+    left = [s.text for s in after if any(k in s.text.lower() for k in must)]
+    print("  after:", [s for s in left])
+    if left: sys.exit(f"[{label}] phrase still there, nothing uploaded")
+    iid, _ = upload_render(drive, dst, dst_name, fid); log(f"[{label}] uploaded {dst_name} -> {iid}")
+    return dst
+
+def requeue(old, new, thumb):
+    from googleapiclient.http import MediaFileUpload
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    if new not in files: sys.exit(f"[CUT] {new} not in Drive")
+    tmp = Path(tempfile.mkdtemp()) / "queue.json"; download(drive, files["queue.json"]["id"], tmp)
+    q = json.loads(tmp.read_text(encoding="utf-8")); n = 0
+    for x in q:
+        if x["file"] == old: x["file"] = new; x.setdefault("thumb", thumb); n += 1
+    if not n: log(f"[CUT] {old} not in queue (already switched?)"); return
+    tmp.write_text(json.dumps(q, ensure_ascii=False, indent=1), encoding="utf-8")
+    f = drive.files().create(body={"name": "queue.json", "parents": [fid]}, media_body=MediaFileUpload(str(tmp), mimetype="application/json"), fields="id").execute()
+    log(f"[CUT] new queue.json {f['id']} ({old} -> {new})")
+
 if __name__ == "__main__":
-    if sys.argv[1] == "patch":
+    if sys.argv[1] == "salalah-georgia":
+        cut_phrase("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", ("georgia", "georgie", "jorja"), label="CUT")
+        requeue("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", "043_OM-Salalah-LongForm_v3_THUMB.jpg")
+    elif sys.argv[1] == "patch":
         patch_lf()
     elif sys.argv[1] == "mestiza":
         mestiza(); queue(REEL3, LF3)
