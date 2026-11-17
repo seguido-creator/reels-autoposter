@@ -253,8 +253,19 @@ def requeue(old, new, thumb):
     f = drive.files().create(body={"name": "queue.json", "parents": [fid]}, media_body=MediaFileUpload(str(tmp), mimetype="application/json"), fields="id").execute()
     log(f"[CUT] new queue.json {f['id']} ({old} -> {new})")
 
+def frames(name, a, b, step=1.0):
+    """Upload a contact sheet of name between a and b seconds (for checking on-screen text)."""
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    tmp = Path(tempfile.mkdtemp()); src = tmp / name; download(drive, files[name]["id"], src)
+    n = int((b - a) / step)
+    sh("ffmpeg", "-v", "error", "-y", "-ss", str(a), "-t", str(b - a), "-i", str(src), "-vf", f"fps={1/step},scale=180:-2,drawtext=text='%{{pts\\:hms}}':x=4:y=4:fontsize=18:fontcolor=yellow,tile=10x{(n+9)//10}", "-frames:v", "1", str(OUT / "sheet.jpg"))
+    out = f"frames_{name[:-4]}_{int(a)}.jpg"
+    iid, _ = upload_render(drive, OUT / "sheet.jpg", out, fid, mime="image/jpeg"); log(f"[CUT] {out} -> {iid}")
+
 if __name__ == "__main__":
-    if sys.argv[1] == "salalah-georgia":
+    if sys.argv[1] == "frames":
+        frames(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
+    elif sys.argv[1] == "salalah-georgia":
         cut_phrase("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", ("georgia", "georgie", "jorja"), label="CUT")
         requeue("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", "043_OM-Salalah-LongForm_v3_THUMB.jpg")
     elif sys.argv[1] == "patch":
