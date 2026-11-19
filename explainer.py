@@ -307,6 +307,7 @@ def as_board(page, script):
         if isinstance(cards, list) and len(cards) == len(script["scenes"]):
             for sc, c in zip(script["scenes"], cards):
                 sc["card"] = c.get("card", c) if isinstance(c, dict) else {}
+                sc["search"] = ""  # no footage now: video QA must judge the animated cards, not the old clip search
             if all(_card_ok(sc) for sc in script["scenes"]):
                 return dict(page, image=dict(page["image"], look="board"))
     raise RuntimeError("board fallback: could not write cards for every scene")
@@ -1132,6 +1133,10 @@ def video_qa(page, mp4, script, card):
             script=" ".join(str(s.get("vo", "")) for s in script.get("scenes", []))[:2500],
             scenes=" | ".join(str(s.get("search", "")) or ("animated card: " + str((s.get("card") or {}).get("title", "")))
                               for s in script.get("scenes", [])))
+        if page["image"].get("look") == "board":
+            prompt += ("\n\nNOTE: this Reel has NO video footage by design. Each scene is an animated explainer card "
+                       "(title, icon, short points) on a plain brand-coloured background. A plain background behind the "
+                       "cards is correct and is NOT missing footage; judge the cards, text and voice instead.")
         resp, _ = transform.generate(transform._gemini_client(), [
             types.Part.from_bytes(data=small.read_bytes(), mime_type="video/mp4"), prompt],
             types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
