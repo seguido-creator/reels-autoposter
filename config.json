@@ -538,6 +538,8 @@
       "voice": "Laomedeia",
       "voice_style": "Tita Chari, a lively Filipina woman in her 50s telling juicy chika to her amigas: animated, playful, expressive, quick when the story heats up, a dramatic pause and a softer voice right before the twist, natural Taglish, clear on names and years; native Filipino pronunciation of every Tagalog word: each 'a' is an open 'ah' as in 'bahay', never 'o' (manunulat = ma-nu-nu-LAT, not 'manunulot'; bayan = ba-YAN; kasaysayan = ka-say-SA-yan), and English words in Taglish are said the way Filipinos say them",
       "image": {
+        "board_fallback": true,
+        "board_min_misses": 2,
         "slots": [],
         "footer": "Totoong chika ng kasaysayan.",
         "angle": "PHILIPPINE HISTORY TOLD LIKE CHIKA: the human, surprising and dramatic side of well-documented Philippine history: the love lives and rivalries of heroes (Rizal's loves, Bonifacio vs Aguinaldo at Tejeros 1897, Antonio Luna's temper), who streets, towns and landmarks are named after (EDSA = Epifanio de los Santos), surprising family links between historical figures, everyday life in old Manila, firsts and 'hindi mo alam' facts. Every fact must carry its year or era and be well documented in standard references (encyclopedias, the National Historical Commission of the Philippines).",

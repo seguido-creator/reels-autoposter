@@ -21,7 +21,7 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 | HIST | History Decoded | US English, world history | 2 AI Reels/day, case-file look, secret-teller narrator (Fenrir) |
 | RET / CRED / MED / SMB | Retirement / Credit / Medical Bills / Small Business Decoded | US English, money basics | YouTube-only (youtube_only: true): Reel + sidecar saved to Published, no Facebook; fact-checked, sourced, general education only |
 | BYA | Byahe ni Nanay | Filipino, family travel | owner's own finished videos (byahe.py): 45 Reels + 6 long-forms + Part 2s + Uzbekistan, 2 posts/day 12:00 and 19:00 PH (owner, 2026-11-16) from Drive "Byahe ni Nanay - Queue" (queue.json order); state in sheet tab BYA; LIVE from 2026-11-12 (owner said go); covers from *_THUMB.jpg in the Drive folder; Reels over 90 s trimmed |
-| KAS | Chika ng Kasaysayan | Taglish, PH history | PARKED (2026-11-04, do not launch); narrator Tita Chari (Laomedeia, female) |
+| KAS | Chika ng Kasaysayan | Taglish, PH history | 2-week TEST from 2026-11-19 (owner): 1 AI Reel/day 18:30 PH; board fallback when 2+ scenes have no fitting clip (board_min_misses); narrator Tita Chari (Laomedeia, female) |
 
 ## How a Reel is made (explainer.py)
 1. Gemini writes the script: 3 hook options -> judge picks one; word budget (image.max_words, default 70; lists +25).
@@ -65,4 +65,5 @@ Automated faceless Reels for the owner's Facebook Pages, run by GitHub Actions w
 - 2026-11-16: Owner: Byahe ni Nanay posts twice a day (12:00 and 19:00 PH, config byahe.post_times). Queue is posted in queue.json file order; the newest queue.json in Drive wins; entries may set "thumb".
 - 2026-11-16: Owner: sneak peek ("Abangan") teaser of the next country after each country; queue items can set "hold_days" (rest days after that item before the next post).
 - 2026-11-16: Owner: Byahe ni Nanay page photos (cover, profile) must never name the countries visited - each country is a surprise. Cover redone without labels and set via the Page UI (API answers #283 pages_manage_metadata for cover/profile).
+- 2026-11-19: Owner: test Chika ng Kasaysayan 1 Reel/day for 2 weeks (keep or park after, by data). Preview showed a reused Korean street clip for Manila, so KAS uses board_fallback + board_min_misses=2 (2+ scenes without a fitting clip -> animated board look). Estimated extra Gemini cost about US$3/month.
 - 2026-11-17: Owner: confirm and verify ALL information written in Byahe Reels/captions. Full audit done (two sources each; disagreements removed). Fixed on-screen text in reels 013, 021, 025, 040, 047, 049 (new *_fx files, thumb kept) and the same captions in long-forms 008, 019, 027, 043, 051 via byahe_cut.py patch (frame overlay, *_fx). Posted #6 still shows the disputed '270,000 tonelada' (cannot edit a posted video).

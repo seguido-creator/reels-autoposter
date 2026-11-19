@@ -405,6 +405,10 @@ def find_clips(page, scenes, used_ids, still=None):
     fallback = page["image"].get("reel_fallback_query") or page["brand"]
     must = [w.lower() for w in str(page["image"].get("reel_subject") or "").split() if len(w) > 2]
     picked, taken, stills = [], set(used_ids), 0
+    # pages with image.board_min_misses (e.g. KAS: few Philippine clips exist) go to the animated board look instead
+    # of patching many scenes with reused or generic footage (a reused clip once showed a Korean street for Manila)
+    min_miss = int(page["image"].get("board_min_misses") or 0) if page["image"].get("board_fallback") else 0
+    misses = 0
     for sc in scenes:
         hit = None
         if page["image"].get("commons") and str(sc.get("commons") or "").strip():
@@ -435,6 +439,10 @@ def find_clips(page, scenes, used_ids, still=None):
                 break
         log(f"[{page['key']}] clip for '{sc['search']}': " + (f"{hit['id']} after {looks} look(s)" if hit
                                                               else f"none fitted ({looks} looked at)"))
+        if not hit:
+            misses += 1
+            if min_miss and misses >= min_miss:
+                raise RuntimeError(f"{misses} scenes without a fitting clip (board_min_misses {min_miss})")
         if not hit and still and stills < MAX_STILLS:
             stills += 1
             hit = {"id": f"st{stills}", "image_url": "still", "image_path": still, "tags": "post photo"}
