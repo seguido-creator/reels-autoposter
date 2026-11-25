@@ -241,13 +241,13 @@ def map_sound(only=None):
         lf = tmp / name; download(drive, files[name]["id"], lf)
         spans = silent_spans(lf); log(f"[MAP] {name}: silent spans {[(round(a,1), round(b,1)) for a, b in spans]}")
         if not spans: log(f"[MAP] {name}: nothing silent, skipped"); lf.unlink(); continue
-        flt, labels = [], []
+        flt, labels = ["[1:a]asplit=" + str(len(spans)) + "".join(f"[s{k}]" for k in range(len(spans)))], []
         for k, (a, b) in enumerate(spans):
             d = b - a
-            flt.append(f"[1:a]atrim=0:{d:.3f},asetpts=PTS-STARTPTS,volume=0.55,afade=t=in:d=1.0,afade=t=out:st={max(0, d - 1.2):.3f}:d=1.2,"
+            flt.append(f"[s{k}]atrim=0:{d:.3f},asetpts=PTS-STARTPTS,volume=0.55,afade=t=in:d=1.0,afade=t=out:st={max(0, d - 1.2):.3f}:d=1.2,"
                        f"aresample=48000,aformat=channel_layouts=stereo,adelay={int(a * 1000)}|{int(a * 1000)}[m{k}]")
             labels.append(f"[m{k}]")
-        flt.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo{''.join(labels)}amix=inputs={len(spans) + 1}:duration=first:normalize=0[a]")
+        flt.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo[base];[base]{''.join(labels)}amix=inputs={len(spans) + 1}:duration=first:normalize=0[a]")
         out = OUT / out_name
         sh("ffmpeg", "-v", "error", "-y", "-i", str(lf), "-stream_loop", "-1", "-i", str(mus), "-filter_complex", ";".join(flt),
            "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out))
