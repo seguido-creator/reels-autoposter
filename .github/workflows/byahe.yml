@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt
       - name: Run
         run: |
           if [ "${{ inputs.task }}" = "post-now" ]; then python byahe.py --now; elif [ "${{ inputs.task }}" = "photos" ]; then python byahe.py --photos; else python byahe.py --check; fi
