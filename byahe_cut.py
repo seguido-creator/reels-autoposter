@@ -217,6 +217,62 @@ def patch_lf():
                              media_body=MediaFileUpload(str(qp), mimetype="application/json"), fields="id").execute()
     log(f"[FIX] new queue.json {f['id']} ({n} long-forms switched)")
 
+# ---- 2026-11-25: the 3D map flights in the long-forms were silent; lay music under every silent span ----
+MAP_LF = ["019_GE-Nanay-LongForm_v3_fx.mp4", "027_AM-Nanay-LongForm_v3_v2_fx.mp4",
+          "036_IL-Nanay-LongForm_v2.mp4", "051_KZ-Nanay-LongForm_v2_v3_fx.mp4"]
+MAP_MUSIC = "map_music.mp3"
+
+def silent_spans(p, limit=240.0):
+    r = subprocess.run(["ffmpeg", "-nostdin", "-vn", "-t", str(limit), "-i", str(p), "-af", "silencedetect=n=-55dB:d=2", "-f", "null", "-"],
+                       capture_output=True, text=True).stderr
+    st = [float(x.split(":")[1]) for x in r.split("\n") if "silence_start:" in x for x in [x.split("silence_start")[1]]]
+    en = [float(x.split("silence_end:")[1].split("|")[0]) for x in r.split("\n") if "silence_end:" in x]
+    return [(a, b) for a, b in zip(st, en) if b - a >= 2.0]
+
+def map_sound(only=None):
+    drive = drive_service(google_creds()); fid, files = folder_files(drive, FOLDER)
+    tmp = Path(tempfile.mkdtemp()); done = {}
+    mus = tmp / MAP_MUSIC; download(drive, files[MAP_MUSIC]["id"], mus)
+    for name in MAP_LF:
+        if only and not name.startswith(only): continue
+        out_name = name[:-4] + "_snd.mp4"
+        if out_name in files: log(f"[MAP] {out_name} already in Drive"); done[name] = out_name; continue
+        if name not in files: log(f"[MAP] {name} not in Drive, skipped"); continue
+        lf = tmp / name; download(drive, files[name]["id"], lf)
+        spans = silent_spans(lf); log(f"[MAP] {name}: silent spans {[(round(a,1), round(b,1)) for a, b in spans]}")
+        if not spans: log(f"[MAP] {name}: nothing silent, skipped"); lf.unlink(); continue
+        flt, labels = [], []
+        for k, (a, b) in enumerate(spans):
+            d = b - a
+            flt.append(f"[1:a]atrim=0:{d:.3f},asetpts=PTS-STARTPTS,volume=0.55,afade=t=in:d=1.0,afade=t=out:st={max(0, d - 1.2):.3f}:d=1.2,"
+                       f"aresample=48000,aformat=channel_layouts=stereo,adelay={int(a * 1000)}|{int(a * 1000)}[m{k}]")
+            labels.append(f"[m{k}]")
+        flt.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo{''.join(labels)}amix=inputs={len(spans) + 1}:duration=first:normalize=0[a]")
+        out = OUT / out_name
+        sh("ffmpeg", "-v", "error", "-y", "-i", str(lf), "-stream_loop", "-1", "-i", str(mus), "-filter_complex", ";".join(flt),
+           "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out))
+        if abs(dur(out) - dur(lf)) > 0.3: sys.exit(f"[MAP] {name}: duration changed, nothing uploaded")
+        left = silent_spans(out); log(f"[MAP] {out_name}: silent spans now {left}")
+        if left: sys.exit(f"[MAP] {name}: still silent somewhere, nothing uploaded")
+        a, b = spans[0]
+        sh("ffmpeg", "-v", "error", "-y", "-ss", f"{max(0, a - 2):.2f}", "-t", f"{min(b - a + 4, 20):.2f}", "-i", str(out),
+           "-vf", "scale=360:-2", "-c:v", "libx264", "-crf", "30", "-c:a", "aac", str(OUT / f"preview_map_{name[:3]}.mp4"))
+        iid, _ = upload_render(drive, out, out_name, fid); log(f"[MAP] uploaded {out_name} -> {iid}"); done[name] = out_name
+        out.unlink(); lf.unlink()
+    if not done: return
+    from googleapiclient.http import MediaFileUpload
+    fid, files = folder_files(drive, FOLDER)
+    qp = tmp / "queue.json"; download(drive, files["queue.json"]["id"], qp)
+    q = json.loads(qp.read_text(encoding="utf-8")); n = 0
+    for x in q:
+        if x["file"] in done:
+            x.setdefault("thumb", x["file"].split("_fx")[0].split(".mp4")[0] + "_THUMB.jpg"); x["file"] = done[x["file"]]; n += 1
+    if not n: log("[MAP] queue already up to date"); return
+    qp.write_text(json.dumps(q, ensure_ascii=False, indent=1), encoding="utf-8")
+    f = drive.files().create(body={"name": "queue.json", "parents": [fid]},
+                             media_body=MediaFileUpload(str(qp), mimetype="application/json"), fields="id").execute()
+    log(f"[MAP] new queue.json {f['id']} ({n} long-forms switched)")
+
 def cut_phrase(src_name, dst_name, must, near=None, label="CUT"):
     """Cut one spoken sentence (faster-whisper segment containing `must`) out of a Drive video; returns dst path or exits."""
     from faster_whisper import WhisperModel
@@ -278,6 +334,8 @@ if __name__ == "__main__":
     elif sys.argv[1] == "salalah-georgia":
         cut_phrase("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", ("georgia", "georgie", "jorja"), label="CUT")
         requeue("043_OM-Salalah-LongForm_v3_fx.mp4", "043_OM-Salalah-LongForm_v3_fx2.mp4", "043_OM-Salalah-LongForm_v3_THUMB.jpg")
+    elif sys.argv[1] == "mapsound":
+        map_sound(sys.argv[2] if len(sys.argv) > 2 else None)
     elif sys.argv[1] == "patch":
         patch_lf()
     elif sys.argv[1] == "mestiza":

@@ -5,7 +5,7 @@ on:
     inputs:
       step:
         type: choice
-        options: ["make", "queue", "mestiza", "patch", "salalah-georgia", "frames", "cutspan"]
+        options: ["make", "queue", "mestiza", "patch", "salalah-georgia", "frames", "cutspan", "mapsound"]
         default: make
       args:
         type: string
@@ -32,7 +32,7 @@ jobs:
           cache: pip
       - run: sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt numpy faster-whisper
       - run: python byahe_cut.py ${{ inputs.step }} ${{ inputs.args }}
-      - if: always() && (inputs.step == 'make' || inputs.step == 'patch')
+      - if: always() && (inputs.step == 'make' || inputs.step == 'patch' || inputs.step == 'mapsound')
         uses: actions/upload-artifact@v4
         with:
           name: previews
