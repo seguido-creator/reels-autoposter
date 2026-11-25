@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt numpy faster-whisper
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && pip install -q -r requirements.txt numpy faster-whisper
       - run: python byahe_cut.py ${{ inputs.step }} ${{ inputs.args }}
       - if: always() && (inputs.step == 'make' || inputs.step == 'patch' || inputs.step == 'mapsound')
         uses: actions/upload-artifact@v4
