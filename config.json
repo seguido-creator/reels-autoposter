@@ -540,7 +540,7 @@
       "image": {
         "board_fallback": true,
         "board_min_misses": 2,
-        "slots": [],
+        "slots": ["18:30"],
         "footer": "Totoong chika ng kasaysayan.",
         "angle": "PHILIPPINE HISTORY TOLD LIKE CHIKA: the human, surprising and dramatic side of well-documented Philippine history: the love lives and rivalries of heroes (Rizal's loves, Bonifacio vs Aguinaldo at Tejeros 1897, Antonio Luna's temper), who streets, towns and landmarks are named after (EDSA = Epifanio de los Santos), surprising family links between historical figures, everyday life in old Manila, firsts and 'hindi mo alam' facts. Every fact must carry its year or era and be well documented in standard references (encyclopedias, the National Historical Commission of the Philippines).",
         "types": [
