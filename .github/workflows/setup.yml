@@ -41,6 +41,10 @@ jobs:
       FB_TOKEN_FIN: ${{ secrets.FB_TOKEN_FIN }}
       FB_PAGE_ID_HOME: ${{ secrets.FB_PAGE_ID_HOME }}
       FB_TOKEN_HOME: ${{ secrets.FB_TOKEN_HOME }}
+      FB_PAGE_ID_HIST: ${{ secrets.FB_PAGE_ID_HIST }}
+      FB_TOKEN_HIST: ${{ secrets.FB_TOKEN_HIST }}
+      FB_PAGE_ID_KAS: ${{ secrets.FB_PAGE_ID_KAS }}
+      FB_TOKEN_KAS: ${{ secrets.FB_TOKEN_KAS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
